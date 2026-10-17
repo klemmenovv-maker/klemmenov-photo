@@ -6,48 +6,189 @@
   "telegram": "https://t.me/klemmenov",
   "instagram": "https://www.instagram.com/klemmenov/",
   "exclude": {
-    "personal": [4, 8, 21, 22, 23, 26, 27, 29, 30, 31, 41, 47, 48, 53, 56, 59, 61, 65, 66]
+    "personal": []
   },
   "hourly": [
-    {"id": "personal", "name": "Personal Shoot", "title": "Personal photoshoot", "rate": 1200, "min": 1,
-     "included": ["20 color-graded images", "5 retouched images"],
-     "notes": ["Studio rental is not included"]},
-    {"id": "commercial", "name": "Commercial Shoot", "title": "Commercial photoshoot", "rate": 1500, "min": 2,
-     "included": ["Professional color grading", "Up to 5 outfits per hour (recommended)", "5 edited images per outfit"],
-     "notes": ["Minimum booking: 2 hours", "Studio rental is not included", "Large-scale productions are quoted individually."]},
-    {"id": "event", "name": "Event Shoot", "title": "Event photography", "rate": 1500, "min": 2,
-     "included": ["Professional color grading", "Commercial usage rights"],
-     "notes": ["Minimum booking: 2 hours", "Express delivery available", "Multi-day events quoted individually."]}
+    {
+      "id": "personal",
+      "name": "Personal Shoot",
+      "title": "Personal photoshoot",
+      "rate": 1200,
+      "min": 1,
+      "included": [
+        "20 color-graded images",
+        "5 retouched images"
+      ],
+      "notes": [
+        "Studio rental is not included"
+      ]
+    },
+    {
+      "id": "commercial",
+      "name": "Commercial Shoot",
+      "title": "Commercial photoshoot",
+      "rate": 1500,
+      "min": 2,
+      "included": [
+        "Professional color grading",
+        "Up to 5 outfits per hour (recommended)",
+        "5 edited images per outfit"
+      ],
+      "notes": [
+        "Minimum booking: 2 hours",
+        "Studio rental is not included",
+        "Large-scale productions are quoted individually."
+      ]
+    },
+    {
+      "id": "event",
+      "name": "Event Shoot",
+      "title": "Event photography",
+      "rate": 1500,
+      "min": 2,
+      "included": [
+        "Professional color grading",
+        "Commercial usage rights"
+      ],
+      "notes": [
+        "Minimum booking: 2 hours",
+        "Express delivery available",
+        "Multi-day events quoted individually."
+      ]
+    }
   ],
   "packages": [
-    {"name": "Studio Beauty Package", "price": 5100,
-     "included": ["2-hour photoshoot", "Studio", "Photographer", "Makeup Artist"]},
-    {"name": "Premium Experience", "price": 10200,
-     "included": ["4-hour session", "Up to 2-hour photoshoot", "Makeup Artist", "Stylist", "Studio", "Up to 2 locations", "Makeup Artist throughout the shoot"]}
+    {
+      "name": "Studio Beauty Package",
+      "price": 5100,
+      "included": [
+        "2-hour photoshoot",
+        "Studio",
+        "Photographer",
+        "Makeup Artist"
+      ]
+    },
+    {
+      "name": "Premium Experience",
+      "price": 10200,
+      "included": [
+        "4-hour session",
+        "Up to 2-hour photoshoot",
+        "Makeup Artist",
+        "Stylist",
+        "Studio",
+        "Up to 2 locations",
+        "Makeup Artist throughout the shoot"
+      ]
+    }
   ],
   "reviews": [
-    {"name": "Daria", "handle": "iaamdassha", "text": "Мы остались в восторге от результата. Делали одну из важных съемок с Евгением- нашу свадьбу. Очень стильно, роскошно и красиво😍🙏🏼благодарим за профессионализм"},
-    {"name": "Anzilya", "handle": "anzibeautyart", "text": "Jeno , спасибо большое за эту съемку 🤍\n\nМне было очень комфортно работать с тобой, понравился твой спокойный и профессиональный подход..\n\nФотографии вышли очень красивыми, стильными и качественными. Я осталась очень довольна кадрами и с удовольствием буду рекомендовать тебя как фотографа.\n\nСпасибо за твою работу и за такие прекрасные фотографии❤️‍🔥"},
-    {"name": "Irina", "text": "Спасибо за отличные кадры с мероприятия!\nВсе важные моменты были замечены и переданы очень точно.\nФото живые, с настроением, ничего не упущено.\nПрофессионально, ненавязчиво и со вкусом — всё, как надо."},
-    {"name": "Julia", "text": "I’m so happy with how the photos turned out! Everything came out beautiful and exceeded my expectations. The team was amazing — friendly, professional, and made the whole experience so enjoyable. Would definitely recommend!"},
-    {"name": "Юлианна", "text": "Thanks for the great pictures"},
-    {"name": "ruaa", "text": "Great experience with the photographer\nDigitals were very clear and good quality\nAtmosphere was wonderful"},
-    {"name": "Olga", "text": "Perfect! Thank you! Great job!"},
-    {"name": "Vitaliya", "text": "These photos are absolutely stunning! I really loved the way the lighting was set up, it beautifully highlights the model’s features and creates such a professional look. The posing feels natural and elegant, and the overall composition is well-balanced. Every detail comes together perfectly, making the final result both artistic and visually captivating. Great work!"},
-    {"name": "Olga Basko", "text": "Great job! Loved the proccess and the outcome!"},
-    {"name": "Анастасия", "text": "Качество, ракурсы, образы — все на высшем уровне. Учли все пожелания, помогли с позированием, результатом более чем довольна."},
-    {"name": "Gozde", "text": "Thank you dor the shooting it was so nice yo experience this"},
-    {"name": "Inga Smolina", "text": "It was a very special day for me and my husband to be. When it came to choosing a photographer for our wedding, we had no hesitation or doubts, and contacted Evgeniy Klemmenov immediately. The photoshoot was stress free, lively, joyful, professional, filled with unforgettable memories and moments!"},
-    {"name": "Amirhesam Amirzade", "text": "Perfect 🥰 love it, one of the amazing team, thank you for your amazing work"},
-    {"name": "Лина", "text": "Фотографии живые, атмосферные и передают настроение момента.\nСпасибо за профессионализм и тёплую атмосферу!"},
-    {"name": "Валентина", "text": "Как всегда лучший 🔥🔥🔥❤️ Спасибооо"},
-    {"name": "Anna", "text": "Really Great work we love it"}
+    {
+      "name": "Daria",
+      "handle": "iaamdassha",
+      "text": "Мы остались в восторге от результата. Делали одну из важных съемок с Евгением- нашу свадьбу. Очень стильно, роскошно и красиво😍🙏🏼благодарим за профессионализм"
+    },
+    {
+      "name": "Anzilya",
+      "handle": "anzibeautyart",
+      "text": "Jeno , спасибо большое за эту съемку 🤍\n\nМне было очень комфортно работать с тобой, понравился твой спокойный и профессиональный подход..\n\nФотографии вышли очень красивыми, стильными и качественными. Я осталась очень довольна кадрами и с удовольствием буду рекомендовать тебя как фотографа.\n\nСпасибо за твою работу и за такие прекрасные фотографии❤️‍🔥"
+    },
+    {
+      "name": "Irina",
+      "text": "Спасибо за отличные кадры с мероприятия!\nВсе важные моменты были замечены и переданы очень точно.\nФото живые, с настроением, ничего не упущено.\nПрофессионально, ненавязчиво и со вкусом — всё, как надо."
+    },
+    {
+      "name": "Julia",
+      "text": "I’m so happy with how the photos turned out! Everything came out beautiful and exceeded my expectations. The team was amazing — friendly, professional, and made the whole experience so enjoyable. Would definitely recommend!"
+    },
+    {
+      "name": "Юлианна",
+      "text": "Thanks for the great pictures"
+    },
+    {
+      "name": "ruaa",
+      "text": "Great experience with the photographer\nDigitals were very clear and good quality\nAtmosphere was wonderful"
+    },
+    {
+      "name": "Olga",
+      "text": "Perfect! Thank you! Great job!"
+    },
+    {
+      "name": "Vitaliya",
+      "text": "These photos are absolutely stunning! I really loved the way the lighting was set up, it beautifully highlights the model’s features and creates such a professional look. The posing feels natural and elegant, and the overall composition is well-balanced. Every detail comes together perfectly, making the final result both artistic and visually captivating. Great work!"
+    },
+    {
+      "name": "Olga Basko",
+      "text": "Great job! Loved the proccess and the outcome!"
+    },
+    {
+      "name": "Анастасия",
+      "text": "Качество, ракурсы, образы — все на высшем уровне. Учли все пожелания, помогли с позированием, результатом более чем довольна."
+    },
+    {
+      "name": "Gozde",
+      "text": "Thank you dor the shooting it was so nice yo experience this"
+    },
+    {
+      "name": "Inga Smolina",
+      "text": "It was a very special day for me and my husband to be. When it came to choosing a photographer for our wedding, we had no hesitation or doubts, and contacted Evgeniy Klemmenov immediately. The photoshoot was stress free, lively, joyful, professional, filled with unforgettable memories and moments!"
+    },
+    {
+      "name": "Amirhesam Amirzade",
+      "text": "Perfect 🥰 love it, one of the amazing team, thank you for your amazing work"
+    },
+    {
+      "name": "Лина",
+      "text": "Фотографии живые, атмосферные и передают настроение момента.\nСпасибо за профессионализм и тёплую атмосферу!"
+    },
+    {
+      "name": "Валентина",
+      "text": "Как всегда лучший 🔥🔥🔥❤️ Спасибооо"
+    },
+    {
+      "name": "Anna",
+      "text": "Really Great work we love it"
+    }
   ],
-  "home_reviews": ["Inga Smolina", "Julia", "Irina"],
-  "hero": [["personal", 11], ["personal", 38], ["personal", 52]],
+  "home_reviews": [
+    "Inga Smolina",
+    "Julia",
+    "Irina"
+  ],
+  "hero": [
+    [
+      "personal",
+      11
+    ],
+    [
+      "personal",
+      38
+    ],
+    [
+      "personal",
+      52
+    ]
+  ],
   "collage": {
-    "personal": [35, 33, 40, 11],
-    "events": [60, 12, 15, 50, 20],
-    "commercial": [3, 12, 13, 6, 10]
+    "personal": [
+      35,
+      33,
+      40,
+      11
+    ],
+    "events": [
+      60,
+      12,
+      15,
+      50,
+      20
+    ],
+    "commercial": [
+      3,
+      12,
+      13,
+      6,
+      10
+    ]
   }
 }
