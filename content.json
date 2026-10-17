@@ -6,7 +6,55 @@
   "telegram": "https://t.me/klemmenov",
   "instagram": "https://www.instagram.com/klemmenov/",
   "exclude": {
-    "personal": []
+    "personal": [
+      4,
+      8,
+      10,
+      20,
+      21,
+      22,
+      25,
+      27,
+      29,
+      41,
+      42,
+      45,
+      46,
+      48,
+      49,
+      50,
+      53,
+      56,
+      63
+    ],
+    "events": [
+      3,
+      5,
+      9,
+      10,
+      23,
+      25,
+      26,
+      31,
+      35,
+      39,
+      41,
+      48,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      61,
+      62
+    ],
+    "commercial": [
+      4,
+      7,
+      8,
+      14
+    ]
   },
   "hourly": [
     {
@@ -86,6 +134,93 @@
     {
       "name": "Daria",
       "handle": "iaamdassha",
+      "text": "Мы остались в восторге от результата. Делали одну из важных съемок с Евгением- нашу свадьбу. Очень стильно, роскошно и красиво😍🙏🏼благодарим за профессионализм",
+      "photo": 1
+    },
+    {
+      "name": "Anzilya",
+      "handle": "anzibeautyart",
+      "text": "Jeno , спасибо большое за эту съемку 🤍\n\nМне было очень комфортно работать с тобой, понравился твой спокойный и профессиональный подход..\n\nФотографии вышли очень красивыми, стильными и качественными. Я осталась очень довольна кадрами и с удовольствием буду рекомендовать тебя как фотографа.\n\nСпасибо за твою работу и за такие прекрасные фотографии❤️‍🔥",
+      "photo": 2
+    },
+    {
+      "name": "Irina",
+      "text": "Спасибо за отличные кадры с мероприятия!\nВсе важные моменты были замечены и переданы очень точно.\nФото живые, с настроением, ничего не упущено.\nПрофессионально, ненавязчиво и со вкусом — всё, как надо.",
+      "photo": 3
+    },
+    {
+      "name": "Vitaliya",
+      "text": "These photos are absolutely stunning! I really loved the way the lighting was set up, it beautifully highlights the model’s features and creates such a professional look. The posing feels natural and elegant, and the overall composition is well-balanced. Every detail comes together perfectly, making the final result both artistic and visually captivating. Great work!",
+      "photo": 4
+    },
+    {
+      "name": "Анастасия",
+      "text": "Качество, ракурсы, образы — все на высшем уровне. Учли все пожелания, помогли с позированием, результатом более чем довольна.",
+      "photo": 5
+    },
+    {
+      "name": "Inga Smolina",
+      "text": "It was a very special day for me and my husband to be. When it came to choosing a photographer for our wedding, we had no hesitation or doubts, and contacted Evgeniy Klemmenov immediately. The photoshoot was stress free, lively, joyful, professional, filled with unforgettable memories and moments!",
+      "photo": 6
+    }
+  ],
+  "home_reviews": [
+    "Daria",
+    "Vitaliya",
+    "Irina"
+  ],
+  "hero": [
+    [
+      "personal",
+      11
+    ],
+    [
+      "personal",
+      38
+    ],
+    [
+      "personal",
+      24
+    ],
+    [
+      "personal",
+      40
+    ],
+    [
+      "personal",
+      52
+    ]
+  ],
+  "collage": {
+    "personal": [
+      35,
+      33,
+      40,
+      11
+    ],
+    "events": [
+      60,
+      12,
+      15,
+      50,
+      20
+    ],
+    "commercial": [
+      3,
+      12,
+      13,
+      6,
+      10
+    ]
+  },
+  "extra_sets": {
+    "personal": "creative",
+    "commercial": "beauty"
+  },
+  "reviews_all": [
+    {
+      "name": "Daria",
+      "handle": "iaamdassha",
       "text": "Мы остались в восторге от результата. Делали одну из важных съемок с Евгением- нашу свадьбу. Очень стильно, роскошно и красиво😍🙏🏼благодарим за профессионализм"
     },
     {
@@ -149,58 +284,5 @@
       "name": "Anna",
       "text": "Really Great work we love it"
     }
-  ],
-  "home_reviews": [
-    "Inga Smolina",
-    "Julia",
-    "Irina"
-  ],
-  "hero": [
-    [
-      "personal",
-      11
-    ],
-    [
-      "personal",
-      38
-    ],
-    [
-      "personal",
-      24
-    ],
-    [
-      "personal",
-      40
-    ],
-    [
-      "personal",
-      52
-    ]
-  ],
-  "collage": {
-    "personal": [
-      35,
-      33,
-      40,
-      11
-    ],
-    "events": [
-      60,
-      12,
-      15,
-      50,
-      20
-    ],
-    "commercial": [
-      3,
-      12,
-      13,
-      6,
-      10
-    ]
-  },
-  "extra_sets": {
-    "personal": "creative",
-    "commercial": "beauty"
-  }
+  ]
 }

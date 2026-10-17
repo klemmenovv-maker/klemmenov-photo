@@ -48,12 +48,13 @@
         "Mountain dusk, white dress",
         "Seaside at sunset"
       ],
-      "strip": "Photograph by Klemmenov, Dubai"
+      "strip": "Photograph by Klemmenov, Dubai",
+      "review": "Photo from the shoot, review by {name}"
     },
     "price_h": "Price your shoot",
     "price_unit": "AED / hour",
     "price_lead": "Personal shoots start at 1,200 AED an hour. Commercial and event shoots are 1,500 AED an hour.",
-    "all_prices": "All prices and packages",
+    "all_prices": "All prices, packages and additional services",
     "reviews_h": "Reviews",
     "all_reviews": "All reviews",
     "book_h": "Book a shoot",
@@ -94,13 +95,18 @@
       "per": "AED / hour",
       "pk_h": "Photoshoot Packages",
       "pk_unit": "AED",
-      "alt": "Photograph by Klemmenov, Dubai"
+      "alt": "Photograph by Klemmenov, Dubai",
+      "jump": [
+        "Hourly rates",
+        "Packages",
+        "Additional services"
+      ]
     },
     "reviews": {
       "title": "Reviews — Klemmenov, photographer in Dubai",
       "desc": "What clients say about shoots with Klemmenov in Dubai.",
       "h1": "Reviews",
-      "lead": "Words from clients, as they wrote them."
+      "lead": "What clients say about the photos, next to the photo."
     },
     "contact": {
       "title": "Contact — Klemmenov, photographer in Dubai",
@@ -277,12 +283,13 @@
         "Горы на закате, белое платье",
         "Море на закате"
       ],
-      "strip": "Фотография Klemmenov, Дубай"
+      "strip": "Фотография Klemmenov, Дубай",
+      "review": "Фото со съёмки, отзыв: {name}"
     },
     "price_h": "Рассчитайте съёмку",
     "price_unit": "AED / час",
     "price_lead": "Личные съёмки от 1 200 AED в час. Коммерческие и ивенты 1 500 AED в час.",
-    "all_prices": "Все цены и пакеты",
+    "all_prices": "Все цены, пакеты и дополнительные услуги",
     "reviews_h": "Отзывы",
     "all_reviews": "Все отзывы",
     "book_h": "Записаться",
@@ -324,13 +331,18 @@
       "per": "AED / час",
       "pk_h": "Пакеты съёмок",
       "pk_unit": "AED",
-      "alt": "Фотография Klemmenov, Дубай"
+      "alt": "Фотография Klemmenov, Дубай",
+      "jump": [
+        "Почасовые тарифы",
+        "Пакеты",
+        "Дополнительные услуги"
+      ]
     },
     "reviews": {
       "title": "Отзывы — Klemmenov, фотограф в Дубае",
       "desc": "Что клиенты говорят о съёмках с Klemmenov в Дубае.",
       "h1": "Отзывы",
-      "lead": "Слова клиентов, как они их написали."
+      "lead": "Что клиенты говорят о фото, рядом с самим фото."
     },
     "contact": {
       "title": "Контакты — Klemmenov, фотограф в Дубае",

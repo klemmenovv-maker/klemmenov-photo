@@ -10,7 +10,7 @@ I = json.load(open(os.path.join(ROOT, 'i18n.json'), encoding='utf8'))
 M = json.load(open(os.path.join(D, 'data', 'manifest.json')))
 SITE = C['site_url'].rstrip('/')
 e = html.escape
-LANGS = ['en', 'ru']
+LANGS = ['en']   # add 'ru' back to rebuild the Russian version (strings are kept in i18n.json)
 
 class Ctx:  # per-page context
     def __init__(self, lang, path):
@@ -47,13 +47,13 @@ NAVP = ['', 'personal/', 'prices/', 'reviews/', 'contact/']
 
 def head(x, title, desc, og='assets/og.jpg'):
     L = x.L; url = f'{SITE}/{x.pfx}{x.path}'
-    alts = ''.join(f'<link rel="alternate" hreflang="{l}" href="{SITE}/{"ru/" if l=="ru" else ""}{x.path}">' for l in LANGS) + f'<link rel="alternate" hreflang="x-default" href="{SITE}/{x.path}">'
+    alts = (''.join(f'<link rel="alternate" hreflang="{l}" href="{SITE}/{"ru/" if l=="ru" else ""}{x.path}">' for l in LANGS) + f'<link rel="alternate" hreflang="x-default" href="{SITE}/{x.path}">') if len(LANGS) > 1 else ''
     ld = json.dumps({"@context": "https://schema.org", "@type": "Photographer", "name": L['name_full'], "alternateName": "Klemmenov",
                      "url": f'{SITE}/', "image": f'{SITE}/{og}', "areaServed": "Dubai", "address": {"@type": "PostalAddress", "addressLocality": "Dubai", "addressCountry": "AE"},
                      "knowsLanguage": ["en", "ru"], "sameAs": [C['instagram'], C['telegram']]}, ensure_ascii=False)
     nav = ''.join(f'<li><a href="{x.home}{p}"{" aria-current=page" if (p and x.path.startswith(p)) or (p == "" and x.path == "") else ""}>{n}</a></li>' for n, p in zip(L['nav'], NAVP))
     other = 'ru/' if x.lang == 'en' else ''
-    sw = f'<li><a class="lang" href="{x.up}{other}{x.path}" hreflang="{"ru" if x.lang=="en" else "en"}" lang="{"ru" if x.lang=="en" else "en"}" aria-label="{L["switch_label"]}">{L["switch"]}</a></li>'
+    sw = '' if len(LANGS) < 2 else f'<li><a class="lang" href="{x.up}{other}{x.path}" hreflang="{"ru" if x.lang=="en" else "en"}" lang="{"ru" if x.lang=="en" else "en"}" aria-label="{L["switch_label"]}">{L["switch"]}</a></li>'
     return f'''<!doctype html>
 <html lang="{x.lang}">
 <head>
@@ -125,13 +125,15 @@ def calc_block(x):
 <a class="btn calc-book" href="{wa(x)}">{cl['book']}</a>
 </div>'''
 
-def reviews_html(names=None):
+def reviews_html(x, names=None, mode='rows'):
     out = []
     for r in C['reviews']:
         if names and r['name'] not in names: continue
         paras = ''.join(f'<p>{e(p).replace(chr(10), "<br>")}</p>' for p in r['text'].split('\n\n'))
         h = f'<a href="https://www.instagram.com/{r["handle"]}/">@{r["handle"]}</a>' if r.get('handle') else ''
-        out.append(f'<blockquote class="quote rv" style="--d:{(len(out)%3)*90}ms">{paras}<cite>{e(r["name"])}{h}</cite></blockquote>')
+        ph = img(x, 'reviews', r['photo'], '(min-width:900px) 40vw, 92vw', x.L['alt']['review'].format(name=r['name'])) if r.get('photo') else ''
+        k = len(out)
+        out.append(f'<article class="review rv {"flip" if k % 2 else ""}" style="--d:{(k%3)*90}ms"><figure>{ph}</figure><blockquote class="quote">{paras}<cite>{e(r["name"])}{h}</cite></blockquote></article>')
     return ''.join(out)
 
 def fitstyle(word):  # per-word fit for the giant headings (CSS reads --n)
@@ -194,7 +196,7 @@ def home(lang):
 
 <section class="ch-burgundy pad" id="reviews"><div class="wrap">
 <div class="chapter-head"><h2 class="rv">{L['reviews_h']}</h2><a class="more rv" href="reviews/">{L['all_reviews']} <span>→</span></a></div>
-<div class="quotes">{reviews_html(C['home_reviews'])}</div>
+<div class="reviews-home">{reviews_html(x, C['home_reviews'])}</div>
 </div></section>
 
 <section class="ch-black pad" id="book"><div class="wrap">
@@ -256,16 +258,17 @@ def prices(lang):
         pk += f'''<div class="pkg rv"><h3>{e(tr['name'])}</h3><p class="price">{money(p['price'], L)}<small>{P['pk_unit']}</small></p><ul>{inc}</ul><a class="btn" href="{wa(x, L['wa_shoot'] + ' ' + tr['name'] + '.')}">{P['slot']}</a></div>'''
     addons = ''.join(f'<li class="rv"><span>{e(a)}</span><strong>{e(p)}</strong></li>' for a, p in L['addons']['items'])
     t += f'''<section class="ch-black">
-<div class="page-head"><h1 class="rv" {fitstyle(P['h1'])}>{P['h1']}</h1><div class="row"><p class="lead rv" style="--d:80ms">{P['lead']}</p></div></div>
+<div class="page-head"><h1 class="rv" {fitstyle(P['h1'])}>{P['h1']}</h1><div class="row"><p class="lead rv" style="--d:80ms">{P['lead']}</p></div>
+<nav class="jump rv" aria-label="{P['jump'][0]}"><a href="#rates">{P['jump'][0]}</a><a href="#packages">{P['jump'][1]}</a><a href="#addons">{P['jump'][2]}</a></nav></div>
 <div class="wrap" style="padding-bottom:clamp(60px,8vw,110px)"><div class="calc"><div></div><div class="rv">{calc_block(x)}</div></div></div>
 {strip(x, [('commercial', 13), ('personal', 35), ('events', 60), ('commercial', 3)])}
-<div style="height:clamp(60px,8vw,110px)"></div>
+<div id="rates" style="height:clamp(60px,8vw,110px)"></div>
 {rows}
 </section>
-<section class="ch-burgundy pad"><div class="wrap">
+<section class="ch-burgundy pad" id="packages"><div class="wrap">
 <h2 class="rv sub" style="margin-bottom:clamp(36px,5vw,70px)">{P['pk_h']}</h2>
 <div class="pkgs">{pk}</div></div></section>
-<section class="ch-white pad"><div class="wrap">
+<section class="ch-white pad" id="addons"><div class="wrap">
 <h2 class="rv sub" style="margin-bottom:clamp(30px,4vw,56px)">{L['addons']['h']}</h2>
 <ul class="addons">{addons}</ul>
 <p class="lead rv" style="margin-top:clamp(28px,4vw,56px)">{L['addons']['note']}</p>
@@ -278,8 +281,7 @@ def reviews(lang):
     t = head(x, R['title'], R['desc'])
     t += f'''<section class="ch-burgundy">
 <div class="page-head"><h1 class="rv" {fitstyle(R['h1'])}>{R['h1']}</h1><div class="row"><p class="lead rv" style="--d:80ms">{R['lead']}</p><a class="btn rv" style="--d:140ms" href="{wa(x)}">{L['book']}</a></div></div>
-{strip(x, [('events', 12), ('personal', 40), ('events', 53), ('commercial', 11)])}
-<div class="wrap" style="padding-top:clamp(60px,8vw,110px);padding-bottom:clamp(70px,10vw,150px)"><div class="quotes quotes-all">{reviews_html()}</div></div>
+<div class="wrap" style="padding-top:clamp(20px,3vw,40px);padding-bottom:clamp(70px,10vw,150px)"><div class="reviews-all">{reviews_html(x)}</div></div>
 </section>
 '''
     w(lang, 'reviews/index.html', t + foot(x))
@@ -306,7 +308,10 @@ def notfound():
 
 def seo():
     pages = ['', 'personal/', 'events/', 'commercial/', 'prices/', 'reviews/', 'contact/']
-    urls = ''.join(f'<url><loc>{SITE}/{p}</loc><xhtml:link rel="alternate" hreflang="en" href="{SITE}/{p}"/><xhtml:link rel="alternate" hreflang="ru" href="{SITE}/ru/{p}"/></url>\n<url><loc>{SITE}/ru/{p}</loc><xhtml:link rel="alternate" hreflang="en" href="{SITE}/{p}"/><xhtml:link rel="alternate" hreflang="ru" href="{SITE}/ru/{p}"/></url>\n' for p in pages)
+    if len(LANGS) < 2:
+        urls = ''.join(f'<url><loc>{SITE}/{p}</loc></url>\n' for p in pages)
+    else:
+      urls = ''.join(f'<url><loc>{SITE}/{p}</loc><xhtml:link rel="alternate" hreflang="en" href="{SITE}/{p}"/><xhtml:link rel="alternate" hreflang="ru" href="{SITE}/ru/{p}"/></url>\n<url><loc>{SITE}/ru/{p}</loc><xhtml:link rel="alternate" hreflang="en" href="{SITE}/{p}"/><xhtml:link rel="alternate" hreflang="ru" href="{SITE}/ru/{p}"/></url>\n' for p in pages)
     w('en', 'sitemap.xml', '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n' + urls + '</urlset>\n')
     w('en', 'robots.txt', f'User-agent: *\nAllow: /\nSitemap: {SITE}/sitemap.xml\n')
     w('en', '.nojekyll', '')
@@ -315,4 +320,4 @@ def seo():
 for lg in LANGS:
     home(lg); [gallery(lg, k) for k in CLS]; prices(lg); reviews(lg); contact(lg)
 notfound(); seo()
-print('built', sorted(os.listdir(D)), sorted(os.listdir(os.path.join(D, 'ru'))))
+print('built', sorted(os.listdir(D)))
