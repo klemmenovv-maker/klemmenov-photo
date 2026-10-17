@@ -92,10 +92,10 @@ def calc_cfg():
 
 def calc_block(root):
     return f'''<div class="calc-ui" data-calc="{calc_cfg()}">
-<div class="seg" role="group" aria-label="Type of shoot"></div>
-<div class="stepper"><button type="button" class="minus" aria-label="One hour less">−</button><output aria-live="polite"></output><button type="button" class="plus" aria-label="One hour more">+</button></div>
 <div class="calc-total" aria-live="polite"></div>
 <p class="calc-note small"></p>
+<div class="seg" role="group" aria-label="Type of shoot"></div>
+<div class="stepper"><button type="button" class="minus" aria-label="One hour less">−</button><output aria-live="polite"></output><button type="button" class="plus" aria-label="One hour more">+</button></div>
 <a class="btn calc-book" href="{wa()}">Book this shoot</a>
 </div>'''
 
@@ -108,6 +108,9 @@ def reviews_html(names=None, all_=False):
         h = f'<a href="https://www.instagram.com/{r["handle"]}/">@{r["handle"]}</a>' if r.get('handle') else ''
         out.append(f'<blockquote class="quote rv" style="--d:{(len(out)%3)*90}ms">{paras}<cite>{e(r["name"])}{h}</cite></blockquote>')
     return ''.join(out)
+
+def strip(items, root):
+    return '<div class="strip">' + ''.join(fig(sn, n, root, '(min-width:900px) 25vw, 50vw', 'Photograph by Klemmenov, Dubai', d=i*100) for i, (sn, n) in enumerate(items)) + '</div>'
 
 def w(path, content):
     p = os.path.join(D, path); os.makedirs(os.path.dirname(p), exist_ok=True)
@@ -124,16 +127,16 @@ def home():
                   for i, ((s, n), alt) in enumerate(zip(hs, ['Evening on the Dubai coast', 'Mountain dusk, white dress', 'Seaside at sunset'])))
     col = C['collage']
     pe = ''.join(fig('personal', n, r, '(min-width:900px) 26vw, 45vw', 'Personal portrait shoot in Dubai', d=i*110) for i, n in enumerate(col['personal'][:3]))
-    ev = ''.join(fig('events', n, r, '(min-width:900px) 40vw, 50vw', 'Event photography in Dubai', d=i*110) for i, n in enumerate(col['events'][:4]))
+    ev = ''.join(fig('events', n, r, '(min-width:900px) 40vw, 50vw', 'Event photography in Dubai', d=i*110) for i, n in enumerate(col['events'][:5]))
     co = ''.join(fig('commercial', n, r, '(min-width:900px) 24vw, 50vw', 'Commercial fashion and beauty photography', d=i*110) for i, n in enumerate(col['commercial'][:4]))
     t += f'''
 <section class="ch-black hero" aria-labelledby="top">
 <div class="tri">{tri}</div>
+<h1 class="name" id="top" data-split>Klemmenov</h1>
 <div class="hero-row">
 <p class="lead rv">Photographer in Dubai. Personal, event and commercial shoots.</p>
 <a class="btn rv" style="--d:120ms" href="{wa()}">Book a shoot</a>
 </div>
-<h1 class="name" id="top" data-split>Klemmenov</h1>
 </section>
 
 <section class="ch-black pad" id="personal">
@@ -163,7 +166,7 @@ def home():
 <section class="ch-black pad" id="price">
 <div class="wrap calc">
 <div>
-<h2 class="rv" style="font-size:clamp(2.6rem,6vw,6rem)">Price your shoot</h2>
+<h2 class="rv sub">Price your shoot</h2>
 <p class="big-price rv" style="--d:100ms;margin-top:.15em">1,200<small>AED / hour</small></p>
 <p class="lead rv" style="--d:160ms;margin-top:24px">Personal shoots start at 1,200 AED an hour. Commercial and event shoots are 1,500 AED an hour.</p>
 </div>
@@ -185,7 +188,7 @@ def home():
 <div class="wrap">
 <h2 class="rv" style="max-width:11ch">Book a shoot</h2>
 <p class="lead rv" style="--d:100ms;margin:28px 0 36px">Write with the date and the type of shoot, and I’ll reply as soon as possible.</p>
-<div class="rv" style="--d:160ms;display:flex;gap:12px;flex-wrap:wrap"><a class="btn" href="{wa('I would like to book a shoot.')}">WhatsApp</a><a class="btn" style="--acc:#171310;--acc-ink:#f1ece4" href="{C['telegram']}">Telegram</a><a class="btn" style="--acc:#171310;--acc-ink:#f1ece4" href="{C['instagram']}">Instagram</a></div>
+<div class="rv" style="--d:160ms;display:flex;gap:12px;flex-wrap:wrap"><a class="btn" href="{wa('I would like to book a shoot.')}">WhatsApp</a><a class="btn" style="--acc:#171310;--acc-ink:#efedea" href="{C['telegram']}">Telegram</a><a class="btn" style="--acc:#171310;--acc-ink:#efedea" href="{C['instagram']}">Instagram</a></div>
 </div>
 </section>
 '''
@@ -247,10 +250,12 @@ def prices():
     t += f'''<section class="ch-black">
 <div class="page-head"><h1 class="rv">Prices</h1><div class="row"><p class="lead rv" style="--d:80ms">All prices in AED. Studio rental is not included in hourly shoots.</p></div></div>
 <div class="wrap" style="padding-bottom:clamp(60px,8vw,110px)"><div class="calc"><div></div><div class="rv">{calc_block(r)}</div></div></div>
+{strip([('commercial', 13), ('personal', 35), ('events', 60), ('commercial', 3)], r)}
+<div style="height:clamp(60px,8vw,110px)"></div>
 {rows}
 </section>
 <section class="ch-burgundy pad"><div class="wrap">
-<h2 class="rv" style="font-size:clamp(2.6rem,6vw,6rem);margin-bottom:clamp(36px,5vw,70px)">Photoshoot Packages</h2>
+<h2 class="rv sub" style="margin-bottom:clamp(36px,5vw,70px)">Photoshoot Packages</h2>
 <div class="pkgs">{pk}</div></div></section>
 '''
     t += foot(r); w('prices/index.html', t)
@@ -261,7 +266,8 @@ def reviews():
     t = head('Reviews — Klemmenov, photographer in Dubai', 'What clients say about shoots with Klemmenov in Dubai.', 'reviews/', r)
     t += f'''<section class="ch-burgundy">
 <div class="page-head"><h1 class="rv">Reviews</h1><div class="row"><p class="lead rv" style="--d:80ms">Words from clients, as they wrote them.</p><a class="btn rv" style="--d:140ms" href="{wa()}">Book a shoot</a></div></div>
-<div class="wrap" style="padding-bottom:clamp(70px,10vw,150px)"><div class="quotes quotes-all">{reviews_html(all_=True)}</div></div>
+{strip([('events', 12), ('personal', 40), ('events', 53), ('commercial', 11)], r)}
+<div class="wrap" style="padding-top:clamp(60px,8vw,110px);padding-bottom:clamp(70px,10vw,150px)"><div class="quotes quotes-all">{reviews_html(all_=True)}</div></div>
 </section>
 '''
     t += foot(r); w('reviews/index.html', t)
