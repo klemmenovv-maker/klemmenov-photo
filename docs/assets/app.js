@@ -33,21 +33,6 @@
   window.addEventListener('load', reveal);
   [200, 700, 1500, 3000].forEach(function (ms) { setTimeout(reveal, ms); });
 
-  // hero parallax (transform only)
-  var par = $$('.tri img');
-  if (par.length && !reduce) {
-    var ticking = false, parOn = false;
-    setTimeout(function () { parOn = true; par.forEach(function (im) { im.style.transition = 'none'; }); }, 2800);
-    window.addEventListener('scroll', function () {
-      if (ticking || !parOn) return; ticking = true;
-      requestAnimationFrame(function () {
-        var y = Math.min(window.scrollY, 900);
-        par.forEach(function (im, i) { im.style.transform = 'translate3d(0,' + (y * (0.05 + i * 0.03)).toFixed(1) + 'px,0) scale(1.06)'; });
-        ticking = false;
-      });
-    }, { passive: true });
-  }
-
   // mobile menu
   var burger = $('.burger');
   if (burger) {

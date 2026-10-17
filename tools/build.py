@@ -146,7 +146,7 @@ def w(lang, path, content):
 def home(lang):
     x = Ctx(lang, ''); L = x.L; col = C['collage']; hs = C['hero']
     t = head(x, L['home']['title'], L['home']['desc'])
-    tri = ''.join(f'<figure style="--i:{i}">{img(x, s, n, "(min-width:900px) 33vw, 50vw", a, eager=True)}</figure>' for i, ((s, n), a) in enumerate(zip(hs, L['alt']['hero'])))
+    tri = ''.join(f'<figure style="--i:{i}">{img(x, s, n, "(min-width:1100px) 20vw, (min-width:700px) 33vw, 50vw", L["alt"]["hero"][i % 3], eager=(i < 3))}</figure>' for i, (s, n) in enumerate(hs))
     pe = ''.join(fig(x, 'personal', n, '(min-width:900px) 26vw, 45vw', L['alt']['personal'], d=i*110) for i, n in enumerate(col['personal'][:3]))
     ev = ''.join(fig(x, 'events', n, '(min-width:900px) 40vw, 50vw', L['alt']['events'], d=i*110) for i, n in enumerate(col['events'][:5]))
     co = ''.join(fig(x, 'commercial', n, '(min-width:900px) 24vw, 50vw', L['alt']['commercial'], d=i*110) for i, n in enumerate(col['commercial'][:4]))
@@ -254,6 +254,7 @@ def prices(lang):
     for p, tr in zip(C['packages'], L['packages']):
         inc = ''.join(f'<li>{e(s)}</li>' for s in tr['included'])
         pk += f'''<div class="pkg rv"><h3>{e(tr['name'])}</h3><p class="price">{money(p['price'], L)}<small>{P['pk_unit']}</small></p><ul>{inc}</ul><a class="btn" href="{wa(x, L['wa_shoot'] + ' ' + tr['name'] + '.')}">{P['slot']}</a></div>'''
+    addons = ''.join(f'<li class="rv"><span>{e(a)}</span><strong>{e(p)}</strong></li>' for a, p in L['addons']['items'])
     t += f'''<section class="ch-black">
 <div class="page-head"><h1 class="rv" {fitstyle(P['h1'])}>{P['h1']}</h1><div class="row"><p class="lead rv" style="--d:80ms">{P['lead']}</p></div></div>
 <div class="wrap" style="padding-bottom:clamp(60px,8vw,110px)"><div class="calc"><div></div><div class="rv">{calc_block(x)}</div></div></div>
@@ -264,6 +265,11 @@ def prices(lang):
 <section class="ch-burgundy pad"><div class="wrap">
 <h2 class="rv sub" style="margin-bottom:clamp(36px,5vw,70px)">{P['pk_h']}</h2>
 <div class="pkgs">{pk}</div></div></section>
+<section class="ch-white pad"><div class="wrap">
+<h2 class="rv sub" style="margin-bottom:clamp(30px,4vw,56px)">{L['addons']['h']}</h2>
+<ul class="addons">{addons}</ul>
+<p class="lead rv" style="margin-top:clamp(28px,4vw,56px)">{L['addons']['note']}</p>
+</div></section>
 '''
     w(lang, 'prices/index.html', t + foot(x))
 

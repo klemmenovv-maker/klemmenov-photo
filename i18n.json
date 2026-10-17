@@ -1,74 +1,461 @@
 {
   "en": {
-    "lang": "en", "locale": "en-US", "name_full": "Evgeny Klemmenov", "switch": "RU", "switch_label": "Русская версия",
-    "nav": ["Main", "Portfolio", "Prices", "Reviews", "Contact"],
-    "book": "Book a shoot", "skip": "Skip to content", "menu": "Menu",
+    "lang": "en",
+    "locale": "en-US",
+    "name_full": "Evgeny Klemmenov",
+    "switch": "RU",
+    "switch_label": "Русская версия",
+    "nav": [
+      "Main",
+      "Portfolio",
+      "Prices",
+      "Reviews",
+      "Contact"
+    ],
+    "book": "Book a shoot",
+    "skip": "Skip to content",
+    "menu": "Menu",
     "wa_text": "Hello, I’m booking through the website. Could you let me know which dates are available?",
     "wa_book": "I would like to book a shoot.",
     "wa_shoot": "Shoot:",
     "hero_lead": "Photographer in Dubai. Personal, event and commercial shoots.",
-    "ch": {"personal": "Personal", "events": "Events", "commercial": "Commercial"},
-    "ch_lead": {"personal": "Portraits in the studio, on the coast and in the desert.", "events": "Conferences, talks, openings, parties and weddings.", "commercial": "Fashion, beauty and product photography for brands."},
-    "ch_link": {"personal": "Personal portfolio", "events": "Event portfolio", "commercial": "Commercial portfolio"},
-    "ch_book": {"personal": "Book a personal shoot", "events": "Book an events shoot", "commercial": "Book a commercial shoot"},
-    "alt": {"personal": "Personal portrait shoot, Dubai", "events": "Event photography, Dubai", "commercial": "Commercial fashion and beauty photography, Dubai", "hero": ["Evening on the Dubai coast", "Mountain dusk, white dress", "Seaside at sunset"], "strip": "Photograph by Klemmenov, Dubai"},
-    "price_h": "Price your shoot", "price_unit": "AED / hour",
+    "ch": {
+      "personal": "Personal",
+      "events": "Events",
+      "commercial": "Commercial"
+    },
+    "ch_lead": {
+      "personal": "Portraits in the studio, on the coast and in the desert.",
+      "events": "Conferences, talks, openings, parties and weddings.",
+      "commercial": "Fashion, beauty and product photography for brands."
+    },
+    "ch_link": {
+      "personal": "Personal portfolio",
+      "events": "Event portfolio",
+      "commercial": "Commercial portfolio"
+    },
+    "ch_book": {
+      "personal": "Book a personal shoot",
+      "events": "Book an events shoot",
+      "commercial": "Book a commercial shoot"
+    },
+    "alt": {
+      "personal": "Personal portrait shoot, Dubai",
+      "events": "Event photography, Dubai",
+      "commercial": "Commercial fashion and beauty photography, Dubai",
+      "hero": [
+        "Evening on the Dubai coast",
+        "Mountain dusk, white dress",
+        "Seaside at sunset"
+      ],
+      "strip": "Photograph by Klemmenov, Dubai"
+    },
+    "price_h": "Price your shoot",
+    "price_unit": "AED / hour",
     "price_lead": "Personal shoots start at 1,200 AED an hour. Commercial and event shoots are 1,500 AED an hour.",
-    "all_prices": "All prices and packages", "reviews_h": "Reviews", "all_reviews": "All reviews",
-    "book_h": "Book a shoot", "book_lead": "Write with the date and the type of shoot, and I’ll reply as soon as possible.",
+    "all_prices": "All prices and packages",
+    "reviews_h": "Reviews",
+    "all_reviews": "All reviews",
+    "book_h": "Book a shoot",
+    "book_lead": "Write with the date and the type of shoot, and I’ll reply as soon as possible.",
     "foot_lead": "Photographer in Dubai. Personal, event and commercial shoots.",
-    "foot_links": ["Personal", "Events", "Commercial", "Prices", "Reviews"],
+    "foot_links": [
+      "Personal",
+      "Events",
+      "Commercial",
+      "Prices",
+      "Reviews"
+    ],
     "legal": "Dubai.",
-    "calc": {"personal": "Personal", "commercial": "Commercial", "event": "Event", "hour1": "hour", "hourN": "hours", "per": "AED per hour", "min": "minimum", "min_h": "hours", "studio": "Studio rental is not included.", "express": "Express delivery available.", "book": "Book this shoot", "less": "One hour less", "more": "One hour more", "group": "Type of shoot"},
-    "prices": {"title": "Prices — Klemmenov, photographer in Dubai", "desc": "Photoshoot prices in AED: personal 1,200 an hour, commercial and event 1,500 an hour, studio packages from 5,100 AED.", "h1": "Prices", "lead": "All prices in AED. Studio rental is not included in hourly shoots.", "included": "Included", "notes": "Notes", "slot": "Book a slot", "per": "AED / hour", "pk_h": "Photoshoot Packages", "pk_unit": "AED", "alt": "Photograph by Klemmenov, Dubai"},
-    "reviews": {"title": "Reviews — Klemmenov, photographer in Dubai", "desc": "What clients say about shoots with Klemmenov in Dubai.", "h1": "Reviews", "lead": "Words from clients, as they wrote them."},
-    "contact": {"title": "Contact — Klemmenov, photographer in Dubai", "desc": "Book a photoshoot in Dubai: message Klemmenov on WhatsApp, Telegram or Instagram.", "h1": "Contact", "lead": "Photographer in Dubai. Write with the date and the type of shoot, and I’ll reply as soon as possible."},
-    "home": {"title": "Klemmenov — Photographer in Dubai", "desc": "Photographer in Dubai: personal portraits, event photography and commercial shoots. Prices in AED, booking on WhatsApp."},
-    "gal": {"personal": {"title": "Personal portraits in Dubai — Klemmenov", "desc": "Personal portrait photography in Dubai: studio, coast and desert shoots by Klemmenov."}, "events": {"title": "Event photography in Dubai — Klemmenov", "desc": "Event photographer in Dubai: conferences, talks, openings, parties and weddings."}, "commercial": {"title": "Commercial photography in Dubai — Klemmenov", "desc": "Commercial fashion, beauty and product photography in Dubai for brands."}},
+    "calc": {
+      "personal": "Personal",
+      "commercial": "Commercial",
+      "event": "Event",
+      "hour1": "hour",
+      "hourN": "hours",
+      "per": "AED per hour",
+      "min": "minimum",
+      "min_h": "hours",
+      "studio": "Studio rental is not included.",
+      "express": "Express delivery available.",
+      "book": "Book this shoot",
+      "less": "One hour less",
+      "more": "One hour more",
+      "group": "Type of shoot"
+    },
+    "prices": {
+      "title": "Prices — Klemmenov, photographer in Dubai",
+      "desc": "Photoshoot prices in AED: personal 1,200 an hour, commercial and event 1,500 an hour, studio packages from 5,100 AED.",
+      "h1": "Prices",
+      "lead": "All prices in AED. Studio rental is not included in hourly shoots.",
+      "included": "Included",
+      "notes": "Notes",
+      "slot": "Book a slot",
+      "per": "AED / hour",
+      "pk_h": "Photoshoot Packages",
+      "pk_unit": "AED",
+      "alt": "Photograph by Klemmenov, Dubai"
+    },
+    "reviews": {
+      "title": "Reviews — Klemmenov, photographer in Dubai",
+      "desc": "What clients say about shoots with Klemmenov in Dubai.",
+      "h1": "Reviews",
+      "lead": "Words from clients, as they wrote them."
+    },
+    "contact": {
+      "title": "Contact — Klemmenov, photographer in Dubai",
+      "desc": "Book a photoshoot in Dubai: message Klemmenov on WhatsApp, Telegram or Instagram.",
+      "h1": "Contact",
+      "lead": "Photographer in Dubai. Write with the date and the type of shoot, and I’ll reply as soon as possible."
+    },
+    "home": {
+      "title": "Klemmenov — Photographer in Dubai",
+      "desc": "Photographer in Dubai: personal portraits, event photography and commercial shoots. Prices in AED, booking on WhatsApp."
+    },
+    "gal": {
+      "personal": {
+        "title": "Personal portraits in Dubai — Klemmenov",
+        "desc": "Personal portrait photography in Dubai: studio, coast and desert shoots by Klemmenov."
+      },
+      "events": {
+        "title": "Event photography in Dubai — Klemmenov",
+        "desc": "Event photographer in Dubai: conferences, talks, openings, parties and weddings."
+      },
+      "commercial": {
+        "title": "Commercial photography in Dubai — Klemmenov",
+        "desc": "Commercial fashion, beauty and product photography in Dubai for brands."
+      }
+    },
     "hourly": {
-      "personal": {"name": "Personal Shoot", "title": "Personal photoshoot", "included": ["20 color-graded images", "5 retouched images"], "notes": ["Studio rental is not included"]},
-      "commercial": {"name": "Commercial Shoot", "title": "Commercial photoshoot", "included": ["Professional color grading", "Up to 5 outfits per hour (recommended)", "5 edited images per outfit"], "notes": ["Minimum booking: 2 hours", "Studio rental is not included", "Large-scale productions are quoted individually."]},
-      "event": {"name": "Event Shoot", "title": "Event photography", "included": ["Professional color grading", "Commercial usage rights"], "notes": ["Minimum booking: 2 hours", "Express delivery available", "Multi-day events quoted individually."]}
+      "personal": {
+        "name": "Personal Shoot",
+        "title": "Personal photoshoot",
+        "included": [
+          "20 color-graded images",
+          "5 retouched images"
+        ],
+        "notes": [
+          "Studio rental is not included"
+        ]
+      },
+      "commercial": {
+        "name": "Commercial Shoot",
+        "title": "Commercial photoshoot",
+        "included": [
+          "Professional color grading",
+          "Up to 5 outfits per hour (recommended)",
+          "5 edited images per outfit"
+        ],
+        "notes": [
+          "Minimum booking: 2 hours",
+          "Studio rental is not included",
+          "Large-scale productions are quoted individually."
+        ]
+      },
+      "event": {
+        "name": "Event Shoot",
+        "title": "Event photography",
+        "included": [
+          "Professional color grading",
+          "Commercial usage rights"
+        ],
+        "notes": [
+          "Minimum booking: 2 hours",
+          "Express delivery available",
+          "Multi-day events quoted individually."
+        ]
+      }
     },
     "packages": [
-      {"name": "Studio Beauty Package", "included": ["2-hour photoshoot", "Studio", "Photographer", "Makeup Artist"]},
-      {"name": "Premium Experience", "included": ["4-hour session", "Up to 2-hour photoshoot", "Makeup Artist", "Stylist", "Studio", "Up to 2 locations", "Makeup Artist throughout the shoot"]}
-    ]
+      {
+        "name": "Studio Beauty Package",
+        "included": [
+          "2-hour photoshoot",
+          "Studio",
+          "Photographer",
+          "Makeup Artist"
+        ]
+      },
+      {
+        "name": "Premium Experience",
+        "included": [
+          "4-hour session",
+          "Up to 2-hour photoshoot",
+          "Makeup Artist",
+          "Stylist",
+          "Studio",
+          "Up to 2 locations",
+          "Makeup Artist throughout the shoot"
+        ]
+      }
+    ],
+    "addons": {
+      "h": "Additional services",
+      "note": "The number of people, time and details are agreed in advance.",
+      "items": [
+        [
+          "Extra retouched photo",
+          "10 AED / photo"
+        ],
+        [
+          "Second photographer (events)",
+          "from 1,200 AED / hour"
+        ],
+        [
+          "Assistant",
+          "from 600 AED / hour"
+        ],
+        [
+          "Makeup artist",
+          "700 AED"
+        ],
+        [
+          "Makeup artist and hair",
+          "1,000 AED per person"
+        ],
+        [
+          "Studio rental",
+          "315–500 AED / hour"
+        ],
+        [
+          "Travel outside Dubai",
+          "300–600 AED"
+        ],
+        [
+          "Video editing",
+          "150 AED per video"
+        ]
+      ]
+    }
   },
   "ru": {
-    "lang": "ru", "locale": "ru-RU", "name_full": "Evgeny Klemmenov", "switch": "EN", "switch_label": "English version",
-    "nav": ["Главная", "Портфолио", "Цены", "Отзывы", "Контакты"],
-    "book": "Записаться на съёмку", "skip": "Перейти к содержимому", "menu": "Меню",
+    "lang": "ru",
+    "locale": "ru-RU",
+    "name_full": "Evgeny Klemmenov",
+    "switch": "EN",
+    "switch_label": "English version",
+    "nav": [
+      "Главная",
+      "Портфолио",
+      "Цены",
+      "Отзывы",
+      "Контакты"
+    ],
+    "book": "Записаться на съёмку",
+    "skip": "Перейти к содержимому",
+    "menu": "Меню",
     "wa_text": "Здравствуйте! Пишу с сайта. Подскажите, какие даты свободны?",
     "wa_book": "Хочу записаться на съёмку.",
     "wa_shoot": "Съёмка:",
     "hero_lead": "Фотограф в Дубае. Личные, ивент и коммерческие съёмки.",
-    "ch": {"personal": "Личные", "events": "Ивенты", "commercial": "Бренды"},
-    "ch_lead": {"personal": "Портреты в студии, на побережье и в пустыне.", "events": "Конференции, выступления, открытия, вечеринки и свадьбы.", "commercial": "Fashion, бьюти и предметная съёмка для брендов."},
-    "ch_link": {"personal": "Портфолио: личные съёмки", "events": "Портфолио: ивенты", "commercial": "Портфолио: бренды"},
-    "ch_book": {"personal": "Записаться на личную съёмку", "events": "Записаться на съёмку ивента", "commercial": "Записаться на коммерческую съёмку"},
-    "alt": {"personal": "Личная портретная съёмка, Дубай", "events": "Съёмка мероприятий, Дубай", "commercial": "Коммерческая fashion и бьюти съёмка, Дубай", "hero": ["Вечер на побережье Дубая", "Горы на закате, белое платье", "Море на закате"], "strip": "Фотография Klemmenov, Дубай"},
-    "price_h": "Рассчитайте съёмку", "price_unit": "AED / час",
+    "ch": {
+      "personal": "Личные",
+      "events": "Ивенты",
+      "commercial": "Бренды"
+    },
+    "ch_lead": {
+      "personal": "Портреты в студии, на побережье и в пустыне.",
+      "events": "Конференции, выступления, открытия, вечеринки и свадьбы.",
+      "commercial": "Fashion, бьюти и предметная съёмка для брендов."
+    },
+    "ch_link": {
+      "personal": "Портфолио: личные съёмки",
+      "events": "Портфолио: ивенты",
+      "commercial": "Портфолио: бренды"
+    },
+    "ch_book": {
+      "personal": "Записаться на личную съёмку",
+      "events": "Записаться на съёмку ивента",
+      "commercial": "Записаться на коммерческую съёмку"
+    },
+    "alt": {
+      "personal": "Личная портретная съёмка, Дубай",
+      "events": "Съёмка мероприятий, Дубай",
+      "commercial": "Коммерческая fashion и бьюти съёмка, Дубай",
+      "hero": [
+        "Вечер на побережье Дубая",
+        "Горы на закате, белое платье",
+        "Море на закате"
+      ],
+      "strip": "Фотография Klemmenov, Дубай"
+    },
+    "price_h": "Рассчитайте съёмку",
+    "price_unit": "AED / час",
     "price_lead": "Личные съёмки от 1 200 AED в час. Коммерческие и ивенты 1 500 AED в час.",
-    "all_prices": "Все цены и пакеты", "reviews_h": "Отзывы", "all_reviews": "Все отзывы",
-    "book_h": "Записаться", "book_lead": "Напишите дату и тип съёмки, отвечу как можно скорее.",
+    "all_prices": "Все цены и пакеты",
+    "reviews_h": "Отзывы",
+    "all_reviews": "Все отзывы",
+    "book_h": "Записаться",
+    "book_lead": "Напишите дату и тип съёмки, отвечу как можно скорее.",
     "foot_lead": "Фотограф в Дубае. Личные, ивент и коммерческие съёмки.",
-    "foot_links": ["Личные", "Ивенты", "Бренды", "Цены", "Отзывы"],
+    "foot_links": [
+      "Личные",
+      "Ивенты",
+      "Бренды",
+      "Цены",
+      "Отзывы"
+    ],
     "legal": "Дубай.",
-    "calc": {"personal": "Личная", "commercial": "Коммерческая", "event": "Ивент", "hour1": "час", "hourN": "часа", "hourM": "часов", "per": "AED в час", "min": "минимум", "min_h": "часа", "studio": "Аренда студии не включена.", "express": "Доступна срочная сдача.", "book": "Забронировать эту съёмку", "less": "На час меньше", "more": "На час больше", "group": "Тип съёмки"},
-    "prices": {"title": "Цены — Klemmenov, фотограф в Дубае", "desc": "Цены на съёмки в AED: личная 1 200 в час, коммерческая и ивенты 1 500 в час, студийные пакеты от 5 100 AED.", "h1": "Цены", "lead": "Все цены в AED. Аренда студии в почасовые съёмки не входит.", "included": "Входит", "notes": "Примечания", "slot": "Записаться", "per": "AED / час", "pk_h": "Пакеты съёмок", "pk_unit": "AED", "alt": "Фотография Klemmenov, Дубай"},
-    "reviews": {"title": "Отзывы — Klemmenov, фотограф в Дубае", "desc": "Что клиенты говорят о съёмках с Klemmenov в Дубае.", "h1": "Отзывы", "lead": "Слова клиентов, как они их написали."},
-    "contact": {"title": "Контакты — Klemmenov, фотограф в Дубае", "desc": "Записаться на съёмку в Дубае: напишите Klemmenov в WhatsApp, Telegram или Instagram.", "h1": "Контакты", "lead": "Фотограф в Дубае. Напишите дату и тип съёмки, отвечу как можно скорее."},
-    "home": {"title": "Klemmenov — фотограф в Дубае", "desc": "Фотограф в Дубае: личные портреты, съёмка мероприятий и коммерческие съёмки. Цены в AED, запись в WhatsApp."},
-    "gal": {"personal": {"title": "Личные съёмки в Дубае — Klemmenov", "desc": "Личная портретная фотосъёмка в Дубае: студия, побережье и пустыня."}, "events": {"title": "Съёмка мероприятий в Дубае — Klemmenov", "desc": "Фотограф на мероприятия в Дубае: конференции, выступления, открытия, вечеринки и свадьбы."}, "commercial": {"title": "Коммерческая съёмка в Дубае — Klemmenov", "desc": "Коммерческая fashion, бьюти и предметная съёмка в Дубае для брендов."}},
+    "calc": {
+      "personal": "Личная",
+      "commercial": "Коммерческая",
+      "event": "Ивент",
+      "hour1": "час",
+      "hourN": "часа",
+      "hourM": "часов",
+      "per": "AED в час",
+      "min": "минимум",
+      "min_h": "часа",
+      "studio": "Аренда студии не включена.",
+      "express": "Доступна срочная сдача.",
+      "book": "Забронировать эту съёмку",
+      "less": "На час меньше",
+      "more": "На час больше",
+      "group": "Тип съёмки"
+    },
+    "prices": {
+      "title": "Цены — Klemmenov, фотограф в Дубае",
+      "desc": "Цены на съёмки в AED: личная 1 200 в час, коммерческая и ивенты 1 500 в час, студийные пакеты от 5 100 AED.",
+      "h1": "Цены",
+      "lead": "Все цены в AED. Аренда студии в почасовые съёмки не входит.",
+      "included": "Входит",
+      "notes": "Примечания",
+      "slot": "Записаться",
+      "per": "AED / час",
+      "pk_h": "Пакеты съёмок",
+      "pk_unit": "AED",
+      "alt": "Фотография Klemmenov, Дубай"
+    },
+    "reviews": {
+      "title": "Отзывы — Klemmenov, фотограф в Дубае",
+      "desc": "Что клиенты говорят о съёмках с Klemmenov в Дубае.",
+      "h1": "Отзывы",
+      "lead": "Слова клиентов, как они их написали."
+    },
+    "contact": {
+      "title": "Контакты — Klemmenov, фотограф в Дубае",
+      "desc": "Записаться на съёмку в Дубае: напишите Klemmenov в WhatsApp, Telegram или Instagram.",
+      "h1": "Контакты",
+      "lead": "Фотограф в Дубае. Напишите дату и тип съёмки, отвечу как можно скорее."
+    },
+    "home": {
+      "title": "Klemmenov — фотограф в Дубае",
+      "desc": "Фотограф в Дубае: личные портреты, съёмка мероприятий и коммерческие съёмки. Цены в AED, запись в WhatsApp."
+    },
+    "gal": {
+      "personal": {
+        "title": "Личные съёмки в Дубае — Klemmenov",
+        "desc": "Личная портретная фотосъёмка в Дубае: студия, побережье и пустыня."
+      },
+      "events": {
+        "title": "Съёмка мероприятий в Дубае — Klemmenov",
+        "desc": "Фотограф на мероприятия в Дубае: конференции, выступления, открытия, вечеринки и свадьбы."
+      },
+      "commercial": {
+        "title": "Коммерческая съёмка в Дубае — Klemmenov",
+        "desc": "Коммерческая fashion, бьюти и предметная съёмка в Дубае для брендов."
+      }
+    },
     "hourly": {
-      "personal": {"name": "Личная съёмка", "title": "Личная съёмка", "included": ["20 кадров с цветокоррекцией", "5 кадров с ретушью"], "notes": ["Аренда студии не включена"]},
-      "commercial": {"name": "Коммерческая съёмка", "title": "Коммерческая съёмка", "included": ["Профессиональная цветокоррекция", "До 5 образов в час (рекомендуется)", "5 обработанных кадров на образ"], "notes": ["Минимальное бронирование: 2 часа", "Аренда студии не включена", "Масштабные проекты считаются индивидуально."]},
-      "event": {"name": "Съёмка мероприятий", "title": "Съёмка мероприятия", "included": ["Профессиональная цветокоррекция", "Коммерческие права на использование"], "notes": ["Минимальное бронирование: 2 часа", "Доступна срочная сдача", "Многодневные мероприятия считаются индивидуально."]}
+      "personal": {
+        "name": "Личная съёмка",
+        "title": "Личная съёмка",
+        "included": [
+          "20 кадров с цветокоррекцией",
+          "5 кадров с ретушью"
+        ],
+        "notes": [
+          "Аренда студии не включена"
+        ]
+      },
+      "commercial": {
+        "name": "Коммерческая съёмка",
+        "title": "Коммерческая съёмка",
+        "included": [
+          "Профессиональная цветокоррекция",
+          "До 5 образов в час (рекомендуется)",
+          "5 обработанных кадров на образ"
+        ],
+        "notes": [
+          "Минимальное бронирование: 2 часа",
+          "Аренда студии не включена",
+          "Масштабные проекты считаются индивидуально."
+        ]
+      },
+      "event": {
+        "name": "Съёмка мероприятий",
+        "title": "Съёмка мероприятия",
+        "included": [
+          "Профессиональная цветокоррекция",
+          "Коммерческие права на использование"
+        ],
+        "notes": [
+          "Минимальное бронирование: 2 часа",
+          "Доступна срочная сдача",
+          "Многодневные мероприятия считаются индивидуально."
+        ]
+      }
     },
     "packages": [
-      {"name": "Студийный бьюти-пакет", "included": ["2 часа съёмки", "Студия", "Фотограф", "Визажист"]},
-      {"name": "Премиум-опыт", "included": ["4 часа сессии", "До 2 часов съёмки", "Визажист", "Стилист", "Студия", "До 2 локаций", "Визажист на протяжении всей съёмки"]}
-    ]
+      {
+        "name": "Студийный бьюти-пакет",
+        "included": [
+          "2 часа съёмки",
+          "Студия",
+          "Фотограф",
+          "Визажист"
+        ]
+      },
+      {
+        "name": "Премиум-опыт",
+        "included": [
+          "4 часа сессии",
+          "До 2 часов съёмки",
+          "Визажист",
+          "Стилист",
+          "Студия",
+          "До 2 локаций",
+          "Визажист на протяжении всей съёмки"
+        ]
+      }
+    ],
+    "addons": {
+      "h": "Дополнительные услуги",
+      "note": "Количество людей, время и детали обсуждаются заранее.",
+      "items": [
+        [
+          "Дополнительная обработка фото",
+          "10 AED за фото"
+        ],
+        [
+          "Второй фотограф (ивенты)",
+          "от 1 200 AED в час"
+        ],
+        [
+          "Ассистент",
+          "от 600 AED в час"
+        ],
+        [
+          "Визажист",
+          "700 AED"
+        ],
+        [
+          "Визажист и причёска",
+          "1 000 AED на человека"
+        ],
+        [
+          "Аренда студии",
+          "315–500 AED в час"
+        ],
+        [
+          "Выезд за пределы Дубая",
+          "300–600 AED"
+        ],
+        [
+          "Монтаж видео",
+          "150 AED за видео"
+        ]
+      ]
+    }
   }
 }
