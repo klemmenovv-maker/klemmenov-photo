@@ -10,16 +10,17 @@ klemmenov-site/
 │  ├─ index.html, personal/, events/, commercial/, prices/, reviews/, contact/, 404.html
 │  ├─ assets/style.css    ← весь дизайн (цвета глав — в начале файла, :root и .ch-*)
 │  ├─ assets/app.js       ← анимации, лайтбокс, калькулятор цены
-│  ├─ assets/fonts/       ← шрифты Cormorant Garamond и Inter (свои, без Google)
+│  ├─ assets/fonts/       ← шрифты Playfair Display и Onest (свои, без Google, с кириллицей)
 │  ├─ assets/img/         ← фото в WebP (полный размер 1200px и превью 560px)
 │  └─ data/manifest.json  ← размеры фото (создаётся скриптом)
-├─ content.json           ← ВСЕ тексты: цены, отзывы, контакты, выбор фото, адрес сайта
+├─ content.json           ← цифры и цены, отзывы, контакты, выбор фото, адрес сайта
+├─ i18n.json              ← все видимые слова на английском и русском (сайт двуязычный: / и /ru/)
 ├─ tools/optimize.py      ← source-images/ → docs/assets/img/ (WebP) + manifest.json
 ├─ tools/build.py         ← content.json + manifest → все HTML-страницы в docs/
 └─ source-images/         ← оригиналы 1280px с wfolio (НЕ в git, только у вас на Desktop)
 ```
 
-Страницы в `docs/` генерируются. Тексты и цены правьте в `content.json`, внешний вид в `docs/assets/style.css`, потом пересоберите.
+Страницы в `docs/` генерируются. Цифры, отзывы, контакты и фото правьте в `content.json`, слова (EN и RU) в `i18n.json`, внешний вид в `docs/assets/style.css`, потом пересоберите.
 
 ## Как поменять
 

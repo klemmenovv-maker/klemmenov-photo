@@ -1,10 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-<url><loc>https://klemmenovv-maker.github.io/klemmenov-photo/</loc></url>
-<url><loc>https://klemmenovv-maker.github.io/klemmenov-photo/personal/</loc></url>
-<url><loc>https://klemmenovv-maker.github.io/klemmenov-photo/events/</loc></url>
-<url><loc>https://klemmenovv-maker.github.io/klemmenov-photo/commercial/</loc></url>
-<url><loc>https://klemmenovv-maker.github.io/klemmenov-photo/prices/</loc></url>
-<url><loc>https://klemmenovv-maker.github.io/klemmenov-photo/reviews/</loc></url>
-<url><loc>https://klemmenovv-maker.github.io/klemmenov-photo/contact/</loc></url>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+<url><loc>https://klemmenovv-maker.github.io/klemmenov-photo/</loc><xhtml:link rel="alternate" hreflang="en" href="https://klemmenovv-maker.github.io/klemmenov-photo/"/><xhtml:link rel="alternate" hreflang="ru" href="https://klemmenovv-maker.github.io/klemmenov-photo/ru/"/></url>
+<url><loc>https://klemmenovv-maker.github.io/klemmenov-photo/ru/</loc><xhtml:link rel="alternate" hreflang="en" href="https://klemmenovv-maker.github.io/klemmenov-photo/"/><xhtml:link rel="alternate" hreflang="ru" href="https://klemmenovv-maker.github.io/klemmenov-photo/ru/"/></url>
+<url><loc>https://klemmenovv-maker.github.io/klemmenov-photo/personal/</loc><xhtml:link rel="alternate" hreflang="en" href="https://klemmenovv-maker.github.io/klemmenov-photo/personal/"/><xhtml:link rel="alternate" hreflang="ru" href="https://klemmenovv-maker.github.io/klemmenov-photo/ru/personal/"/></url>
+<url><loc>https://klemmenovv-maker.github.io/klemmenov-photo/ru/personal/</loc><xhtml:link rel="alternate" hreflang="en" href="https://klemmenovv-maker.github.io/klemmenov-photo/personal/"/><xhtml:link rel="alternate" hreflang="ru" href="https://klemmenovv-maker.github.io/klemmenov-photo/ru/personal/"/></url>
+<url><loc>https://klemmenovv-maker.github.io/klemmenov-photo/events/</loc><xhtml:link rel="alternate" hreflang="en" href="https://klemmenovv-maker.github.io/klemmenov-photo/events/"/><xhtml:link rel="alternate" hreflang="ru" href="https://klemmenovv-maker.github.io/klemmenov-photo/ru/events/"/></url>
+<url><loc>https://klemmenovv-maker.github.io/klemmenov-photo/ru/events/</loc><xhtml:link rel="alternate" hreflang="en" href="https://klemmenovv-maker.github.io/klemmenov-photo/events/"/><xhtml:link rel="alternate" hreflang="ru" href="https://klemmenovv-maker.github.io/klemmenov-photo/ru/events/"/></url>
+<url><loc>https://klemmenovv-maker.github.io/klemmenov-photo/commercial/</loc><xhtml:link rel="alternate" hreflang="en" href="https://klemmenovv-maker.github.io/klemmenov-photo/commercial/"/><xhtml:link rel="alternate" hreflang="ru" href="https://klemmenovv-maker.github.io/klemmenov-photo/ru/commercial/"/></url>
+<url><loc>https://klemmenovv-maker.github.io/klemmenov-photo/ru/commercial/</loc><xhtml:link rel="alternate" hreflang="en" href="https://klemmenovv-maker.github.io/klemmenov-photo/commercial/"/><xhtml:link rel="alternate" hreflang="ru" href="https://klemmenovv-maker.github.io/klemmenov-photo/ru/commercial/"/></url>
+<url><loc>https://klemmenovv-maker.github.io/klemmenov-photo/prices/</loc><xhtml:link rel="alternate" hreflang="en" href="https://klemmenovv-maker.github.io/klemmenov-photo/prices/"/><xhtml:link rel="alternate" hreflang="ru" href="https://klemmenovv-maker.github.io/klemmenov-photo/ru/prices/"/></url>
+<url><loc>https://klemmenovv-maker.github.io/klemmenov-photo/ru/prices/</loc><xhtml:link rel="alternate" hreflang="en" href="https://klemmenovv-maker.github.io/klemmenov-photo/prices/"/><xhtml:link rel="alternate" hreflang="ru" href="https://klemmenovv-maker.github.io/klemmenov-photo/ru/prices/"/></url>
+<url><loc>https://klemmenovv-maker.github.io/klemmenov-photo/reviews/</loc><xhtml:link rel="alternate" hreflang="en" href="https://klemmenovv-maker.github.io/klemmenov-photo/reviews/"/><xhtml:link rel="alternate" hreflang="ru" href="https://klemmenovv-maker.github.io/klemmenov-photo/ru/reviews/"/></url>
+<url><loc>https://klemmenovv-maker.github.io/klemmenov-photo/ru/reviews/</loc><xhtml:link rel="alternate" hreflang="en" href="https://klemmenovv-maker.github.io/klemmenov-photo/reviews/"/><xhtml:link rel="alternate" hreflang="ru" href="https://klemmenovv-maker.github.io/klemmenov-photo/ru/reviews/"/></url>
+<url><loc>https://klemmenovv-maker.github.io/klemmenov-photo/contact/</loc><xhtml:link rel="alternate" hreflang="en" href="https://klemmenovv-maker.github.io/klemmenov-photo/contact/"/><xhtml:link rel="alternate" hreflang="ru" href="https://klemmenovv-maker.github.io/klemmenov-photo/ru/contact/"/></url>
+<url><loc>https://klemmenovv-maker.github.io/klemmenov-photo/ru/contact/</loc><xhtml:link rel="alternate" hreflang="en" href="https://klemmenovv-maker.github.io/klemmenov-photo/contact/"/><xhtml:link rel="alternate" hreflang="ru" href="https://klemmenovv-maker.github.io/klemmenov-photo/ru/contact/"/></url>
 </urlset>

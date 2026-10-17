@@ -190,5 +190,9 @@
       6,
       10
     ]
+  },
+  "extra_sets": {
+    "personal": "creative",
+    "commercial": "beauty"
   }
 }

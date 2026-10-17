@@ -99,22 +99,27 @@
   // price calculator
   $$('[data-calc]').forEach(function (box) {
     var cfg = JSON.parse(box.getAttribute('data-calc'));
-    var svc = cfg.services, wa = cfg.wa, base = cfg.text;
+    var svc = cfg.services, wa = cfg.wa, base = cfg.text, c = cfg.c, ru = cfg.lang === 'ru';
     var state = { s: 0, h: svc[0].min };
     var seg = $('.seg', box), out = $('output', box), total = $('.calc-total', box), note = $('.calc-note', box), book = $('.calc-book', box);
+    var fmt = function (n) { return n.toLocaleString(cfg.locale).replace(/\u202f/g, '\u00a0'); };
+    var hours = function (n) {
+      if (!ru) return n + ' ' + (n === 1 ? c.hour1 : c.hourN);
+      var m10 = n % 10, m100 = n % 100;
+      return n + ' ' + (m10 === 1 && m100 !== 11 ? c.hour1 : (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? c.hourN : c.hourM));
+    };
     svc.forEach(function (s, i) {
       var b = document.createElement('button'); b.type = 'button'; b.textContent = s.label; b.setAttribute('aria-pressed', i === 0);
       b.addEventListener('click', function () { state.s = i; state.h = Math.max(state.h, svc[i].min); render(); });
       seg.appendChild(b);
     });
-    var fmt = function (n) { return n.toLocaleString('en-US'); };
     function render() {
       var s = svc[state.s], sum = s.rate * state.h;
       $$('button', seg).forEach(function (b, i) { b.setAttribute('aria-pressed', i === state.s); });
-      out.textContent = state.h + (state.h === 1 ? ' hour' : ' hours');
+      out.textContent = hours(state.h);
       total.textContent = fmt(sum) + ' AED';
-      note.textContent = s.rate.toLocaleString('en-US') + ' AED per hour' + (s.min > 1 ? ', minimum ' + s.min + ' hours' : '') + '. ' + s.note;
-      var msg = base + ' Shoot: ' + s.title + ', ' + out.textContent + ' (' + fmt(sum) + ' AED).';
+      note.textContent = fmt(s.rate) + ' ' + c.per + (s.min > 1 ? ', ' + c.min + ' ' + s.min + ' ' + c.min_h : '') + '. ' + s.note;
+      var msg = base + ' ' + cfg.shoot + ' ' + s.title + ', ' + out.textContent + ' (' + fmt(sum) + ' AED).';
       book.href = 'https://wa.me/' + wa + '?text=' + encodeURIComponent(msg);
     }
     $('.minus', box).addEventListener('click', function () { state.h = Math.max(svc[state.s].min, state.h - 1); render(); });
