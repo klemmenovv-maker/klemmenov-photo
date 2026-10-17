@@ -51,9 +51,25 @@
     ],
     "commercial": [
       4,
+      6,
       7,
       8,
+      9,
+      10,
+      11,
       14
+    ],
+    "creative": [
+      2,
+      8,
+      14,
+      18,
+      42,
+      48
+    ],
+    "beauty": [
+      8,
+      15
     ]
   },
   "hourly": [
@@ -149,16 +165,6 @@
       "photo": 3
     },
     {
-      "name": "Vitaliya",
-      "text": "These photos are absolutely stunning! I really loved the way the lighting was set up, it beautifully highlights the model’s features and creates such a professional look. The posing feels natural and elegant, and the overall composition is well-balanced. Every detail comes together perfectly, making the final result both artistic and visually captivating. Great work!",
-      "photo": 4
-    },
-    {
-      "name": "Анастасия",
-      "text": "Качество, ракурсы, образы — все на высшем уровне. Учли все пожелания, помогли с позированием, результатом более чем довольна.",
-      "photo": 5
-    },
-    {
       "name": "Inga Smolina",
       "text": "It was a very special day for me and my husband to be. When it came to choosing a photographer for our wedding, we had no hesitation or doubts, and contacted Evgeniy Klemmenov immediately. The photoshoot was stress free, lively, joyful, professional, filled with unforgettable memories and moments!",
       "photo": 6
@@ -166,7 +172,7 @@
   ],
   "home_reviews": [
     "Daria",
-    "Vitaliya",
+    "Anzilya",
     "Irina"
   ],
   "hero": [
@@ -209,8 +215,7 @@
       3,
       12,
       13,
-      6,
-      10
+      1
     ]
   },
   "extra_sets": {

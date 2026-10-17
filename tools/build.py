@@ -216,7 +216,7 @@ def gallery(lang, key):
     items = [(key, int(m['id'].split('-')[1])) for m in M[key] if int(m['id'].split('-')[1]) not in ex]
     extra = C.get('extra_sets', {}).get(key)          # e.g. personal gets the 'creative' set mixed in
     if extra:
-        ext = [(extra, int(m['id'].split('-')[1])) for m in M[extra]]
+        ext = [(extra, int(m['id'].split('-')[1])) for m in M[extra] if int(m['id'].split('-')[1]) not in set(C['exclude'].get(extra, []))]
         step = max(3, len(items) // (len(ext) + 1))
         for j, it in enumerate(ext):
             items.insert(min(len(items), 2 + j * (step + 1)), it)
