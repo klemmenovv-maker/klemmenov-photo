@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://klemmenovv-maker.github.io/klemmenov-photo/sitemap.xml
