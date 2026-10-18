@@ -296,3 +296,35 @@ h1.name { margin-top: clamp(14px, 2vw, 26px); }
 .jump { display: flex; flex-wrap: wrap; gap: 8px; margin-top: clamp(24px, 3vw, 40px); }
 .jump a { display: inline-flex; align-items: center; min-height: 46px; padding: 0 20px; background: var(--tone); color: var(--fg); text-decoration: none; font-weight: 500; transition: background .25s, color .25s, transform .25s var(--ease); }
 .jump a:hover { background: var(--acc); color: var(--acc-ink); transform: translateY(-2px); }
+
+/* ---------- home v2: services, steps, work, faq ---------- */
+.hero-row .from { font-size: var(--fs-body); margin-top: 14px; opacity: .85; }
+.svc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(10px, 1.6vw, 22px); margin-top: clamp(36px, 5vw, 70px); align-items: stretch; }
+.svc { display: flex; flex-direction: column; gap: 14px; padding: clamp(24px, 3vw, 44px); background: var(--bg); color: var(--fg); }
+.svc-tone { background: var(--tone); }
+.svc-price { font-family: var(--serif); font-size: var(--fs-lead); line-height: 1.15; color: var(--acc); }
+.svc ul { list-style: none; padding: 0; margin-bottom: 18px; }
+.svc li { padding: 3px 0; }
+.svc .btn { margin-top: auto; align-self: flex-start; }
+.steps { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(24px, 3.4vw, 56px); margin-top: clamp(36px, 5vw, 70px); }
+.steps h3 { margin-bottom: 12px; }
+.work-set { margin-top: clamp(44px, 6vw, 90px); }
+.work-set h3 a { text-decoration: none; display: inline-flex; gap: .3em; align-items: baseline; }
+.work-set h3 a span { transition: transform .3s var(--ease); }
+.work-set h3 a:hover span { transform: translateX(6px); }
+.work-grid { columns: 3; column-gap: clamp(8px, 1.2vw, 16px); margin-top: clamp(18px, 2.4vw, 30px); }
+.work-grid figure { break-inside: avoid; margin-bottom: clamp(8px, 1.2vw, 16px); background: var(--tone); }
+.work-grid img { width: 100%; height: auto; }
+.faq { display: grid; gap: 8px; margin-top: clamp(36px, 5vw, 70px); max-width: 960px; }
+.faq details { background: var(--tone); }
+.faq summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 24px; align-items: baseline; padding: clamp(18px, 2.4vw, 28px) clamp(18px, 2.6vw, 34px); font: 400 var(--fs-quote)/1.3 var(--serif); }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; flex: none; color: var(--acc); }
+.faq details[open] summary::after { content: "\2212"; }
+.faq details p { padding: 0 clamp(18px, 2.6vw, 34px) clamp(20px, 2.6vw, 32px); max-width: 62ch; margin: 0; }
+.pkg h3 { font-size: var(--fs-lead); }
+@media (max-width: 900px) {
+  .svc-grid, .steps { grid-template-columns: 1fr; }
+  .work-grid { columns: 2; }
+}
+#packages .pkgs { margin-top: clamp(36px, 5vw, 70px); }

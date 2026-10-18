@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 import unittest
+from html.parser import HTMLParser
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
@@ -19,6 +20,36 @@ def _check_html(html, files=()):
             os.makedirs(os.path.dirname(p), exist_ok=True)
             open(p, "w").close()
         return check_site.check(d)
+
+
+class _Home(HTMLParser):
+    """Collects section ids, anchors (with the section they sit in) and the text of #hero."""
+
+    def __init__(self):
+        super().__init__()
+        self.sections, self.links, self.hero_text, self.hero_btns = [], [], [], 0
+        self._stack, self._cur = [], None
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if tag == "section":
+            self._cur = a.get("id")
+            self.sections.append(self._cur)
+        if tag == "a":
+            self.links.append((self._cur, a.get("href", ""), a.get("class", "")))
+            if self._cur == "hero" and "btn" in a.get("class", "").split():
+                self.hero_btns += 1
+
+    def handle_data(self, data):
+        if self._cur == "hero":
+            self.hero_text.append(data)
+
+
+def _home():
+    p = _Home()
+    with open(os.path.join(ROOT, "docs", "index.html"), encoding="utf-8") as f:
+        p.feed(f.read())
+    return p
 
 
 class SiteTests(unittest.TestCase):
@@ -86,6 +117,27 @@ class SiteTests(unittest.TestCase):
     def test_empty_alt_is_allowed(self):
         self.assertEqual(
             _check_html('<img src="a.webp" width="1" height="1" alt="">', ["a.webp"]), [])
+
+    def test_home_section_order(self):
+        self.assertEqual(_home().sections, ["hero", "services", "how", "work", "packages",
+                                            "reviews", "faq", "book"])
+
+    def test_service_cards_link_to_book(self):
+        hrefs = [h for sec, h, _ in _home().links if sec in ("services", "packages")]
+        for sid in ("personal", "event", "commercial", "beauty", "premium"):
+            self.assertIn(f"book/?service={sid}", hrefs)
+
+    def test_home_hero_shows_from_price(self):
+        self.assertIn("1,200", "".join(_home().hero_text))
+
+    def test_home_no_duplicate_hero_cta(self):
+        self.assertEqual(_home().hero_btns, 1)
+
+    def test_book_placeholder_exists(self):
+        with open(os.path.join(ROOT, "docs", "book", "index.html"), encoding="utf-8") as f:
+            html = f.read()
+        self.assertIn("<h1", html)
+        self.assertIn("wa.me", html)
 
 
 if __name__ == "__main__":

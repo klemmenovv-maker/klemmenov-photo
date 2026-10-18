@@ -145,67 +145,97 @@ def w(lang, path, content):
     open(p, 'w', encoding='utf8').write(content)
 
 # ---------------------------------------------------------------- HOME
+WORK = [('personal', 'personal'), ('events', 'events'), ('commercial', 'commercial')]   # (photo set, gallery page)
+
+def work_ids(key, count=6):  # collage ids first, then the rest of the set; excluded ids never appear
+    ex = set(C['exclude'].get(key, []))
+    ids = [n for n in C['collage'][key] if n not in ex]
+    for m in M[key]:
+        n = int(m['id'].split('-')[1])
+        if n not in ex and n not in ids: ids.append(n)
+    return ids[:count]
+
 def home(lang):
-    x = Ctx(lang, ''); L = x.L; col = C['collage']; hs = C['hero']
+    x = Ctx(lang, ''); L = x.L; V = L['home_v2']; hs = C['hero']
     t = head(x, L['home']['title'], L['home']['desc'])
     tri = ''.join(f'<figure style="--i:{i}">{img(x, s, n, "(min-width:1100px) 20vw, (min-width:700px) 33vw, 50vw", L["alt"]["hero"][i % 3], eager=(i < 3))}</figure>' for i, (s, n) in enumerate(hs))
-    pe = ''.join(fig(x, 'personal', n, '(min-width:900px) 26vw, 45vw', L['alt']['personal'], d=i*110) for i, n in enumerate(col['personal'][:3]))
-    ev = ''.join(fig(x, 'events', n, '(min-width:900px) 40vw, 50vw', L['alt']['events'], d=i*110) for i, n in enumerate(col['events'][:5]))
-    co = ''.join(fig(x, 'commercial', n, '(min-width:900px) 24vw, 50vw', L['alt']['commercial'], d=i*110) for i, n in enumerate(col['commercial'][:4]))
-    def head2(k, cls): return f'<div class="chapter-head"><h2 class="rv">{L["ch"][k]}</h2><p class="lead rv" style="--d:100ms">{L["ch_lead"][k]}</p></div>'
-    foot_ = lambda k, href: f'<div class="chapter-foot rv"><a class="more" href="{href}">{L["ch_link"][k]} <span>→</span></a></div>'
+    hr = {h['id']: h for h in hourly(x)}
+    tone = {'personal': 'ch-burgundy', 'event': 'ch-white', 'commercial': 'svc-tone'}
+    cards = ''
+    for k, sc in enumerate(C['service_cards']):
+        h = hr[sc['id']]; bl = ''.join(f'<li>{e(b)}</li>' for b in sc['bullets'])
+        cards += (f'<article class="svc {tone[sc["id"]]} rv" style="--d:{k*90}ms"><h3>{e(h["name"])}</h3>'
+                  f'<p class="svc-price">{V["from_label"]} {money(sc["from"], L)} {V["unit"]}</p><ul>{bl}</ul>'
+                  f'<a class="btn" href="book/?service={sc["id"]}">{V["book_cta"]}</a></article>')
+    steps = ''.join(f'<li class="rv" style="--d:{k*90}ms"><h3>{e(st["title"])}</h3><p>{e(st["text"])}</p></li>' for k, st in enumerate(C['how_it_works']))
+    work = ''
+    for key, page in WORK:
+        frames = ''.join(fig(x, key, n, '(min-width:900px) 30vw, 50vw', L['alt'][key], d=(i % 3) * 90) for i, n in enumerate(work_ids(key)))
+        work += f'<div class="work-set"><h3 class="rv"><a href="{page}/">{L["ch"][key]} <span>→</span></a></h3><div class="work-grid">{frames}</div></div>'
+    P = L['prices']; pk = ''
+    pids = [k for k, v in C['services'].items() if v['type'] == 'package']
+    for sid, p, tr in zip(pids, C['packages'], L['packages']):
+        inc = ''.join(f'<li>{e(i)}</li>' for i in tr['included'])
+        pk += (f'<article class="pkg rv"><h3>{e(tr["name"])}</h3><p class="price">{money(p["price"], L)}<small>{P["pk_unit"]}</small></p>'
+               f'<ul>{inc}</ul><a class="btn" href="book/?service={sid}">{V["book_cta"]}</a></article>')
+    faq = ''.join(f'<details class="rv"><summary>{e(f["q"])}</summary><p>{e(f["a"])}</p></details>' for f in C['faq'])
     t += f'''
-<section class="ch-black hero" aria-labelledby="top">
+<section class="ch-black hero" id="hero" aria-labelledby="top">
 <div class="tri">{tri}</div>
 <h1 class="name" id="top" data-split>Klemmenov</h1>
 <div class="hero-row">
-<p class="lead rv">{L['hero_lead']}</p>
+<div><p class="lead rv">{L['hero_lead']}</p><p class="from rv" style="--d:80ms">{e(V['hero_from'])}</p></div>
 <a class="btn rv" style="--d:120ms" href="{wa(x)}">{L['book']}</a>
 </div>
 </section>
 
-<section class="ch-black pad" id="personal"><div class="wrap">
-{head2('personal','')}
-<div class="col-personal">{pe}</div>
-{foot_('personal', 'personal/')}
+<section class="ch-black pad" id="services"><div class="wrap">
+<h2 class="rv sub">{V['services_h']}</h2>
+<div class="svc-grid">{cards}</div>
 </div></section>
 
-<section class="ch-burgundy pad" id="events"><div class="wrap">
-{head2('events','')}
-<div class="col-events">{ev}</div>
-{foot_('events', 'events/')}
+<section class="ch-burgundy pad" id="how"><div class="wrap">
+<h2 class="rv sub">{V['how_h']}</h2>
+<ol class="steps" role="list">{steps}</ol>
 </div></section>
 
-<section class="ch-white pad" id="commercial"><div class="wrap">
-{head2('commercial','')}
-<div class="col-commercial">{co}</div>
-{foot_('commercial', 'commercial/')}
+<section class="ch-black pad" id="work"><div class="wrap">
+<div class="chapter-head"><h2 class="rv sub">{V['work_h']}</h2><a class="more rv" href="personal/">{V['work_cta']} <span>→</span></a></div>
+{work}
 </div></section>
 
-<section class="ch-black pad" id="price"><div class="wrap calc">
-<div>
-<h2 class="rv sub">{L['price_h']}</h2>
-<p class="big-price rv" style="--d:100ms">{money(1200, L)}<small>{L['price_unit']}</small></p>
-<p class="lead rv" style="--d:160ms;margin-top:24px">{L['price_lead']}</p>
-</div>
-<div class="rv" style="--d:120ms">
-{calc_block(x)}
-<p style="margin-top:22px"><a class="more" href="prices/">{L['all_prices']} <span>→</span></a></p>
-</div>
+<section class="ch-white pad" id="packages"><div class="wrap">
+<h2 class="rv sub">{V['packages_h']}</h2>
+<div class="pkgs">{pk}</div>
 </div></section>
 
 <section class="ch-burgundy pad" id="reviews"><div class="wrap">
-<div class="chapter-head"><h2 class="rv">{L['reviews_h']}</h2><a class="more rv" href="reviews/">{L['all_reviews']} <span>→</span></a></div>
+<div class="chapter-head"><h2 class="rv sub">{V['reviews_h']}</h2><a class="more rv" href="reviews/">{L['all_reviews']} <span>→</span></a></div>
 <div class="reviews-home">{reviews_html(x, C['home_reviews'])}</div>
 </div></section>
 
-<section class="ch-black pad" id="book"><div class="wrap">
-<h2 class="rv" style="max-width:11ch">{L['book_h']}</h2>
-<p class="lead rv" style="--d:100ms;margin:28px 0 36px">{L['book_lead']}</p>
+<section class="ch-black pad" id="faq"><div class="wrap">
+<h2 class="rv sub">{V['faq_h']}</h2>
+<div class="faq">{faq}</div>
+</div></section>
+
+<section class="ch-burgundy pad" id="book"><div class="wrap">
+<h2 class="rv" style="max-width:11ch">{V['book_h']}</h2>
+<p class="lead rv" style="--d:100ms;margin:28px 0 36px">{V['book_lead']}</p>
 <div class="rv" style="--d:160ms;display:flex;gap:12px;flex-wrap:wrap"><a class="btn" href="{wa(x, L['wa_book'])}">WhatsApp</a><a class="btn" style="--acc:#171310;--acc-ink:#efedea" href="{C['telegram']}">Telegram</a><a class="btn" style="--acc:#171310;--acc-ink:#efedea" href="{C['instagram']}">Instagram</a></div>
 </div></section>
 '''
     w(lang, 'index.html', t + foot(x))
+
+# placeholder booking page; the full flow replaces it later
+def book(lang):
+    x = Ctx(lang, 'book/'); L = x.L; B = L['book_page']
+    t = head(x, B['title'], B['desc'])
+    t += f'''<section class="ch-black">
+<div class="page-head"><h1 class="rv" {fitstyle(B['h1'])}>{B['h1']}</h1><div class="row"><a class="btn rv" style="--d:140ms" href="{wa(x, L['wa_book'])}">WhatsApp</a></div></div>
+</section>
+'''
+    w(lang, 'book/index.html', t + foot(x))
 
 # ---------------------------------------------------------------- GALLERIES
 CLS = {'personal': 'ch-black', 'events': 'ch-burgundy', 'commercial': 'ch-white'}
@@ -307,7 +337,7 @@ def notfound():
     w('en', '404.html', t + foot(x))
 
 def seo():
-    pages = ['', 'personal/', 'events/', 'commercial/', 'prices/', 'reviews/', 'contact/']
+    pages = ['', 'personal/', 'events/', 'commercial/', 'prices/', 'reviews/', 'contact/', 'book/']
     if len(LANGS) < 2:
         urls = ''.join(f'<url><loc>{SITE}/{p}</loc></url>\n' for p in pages)
     else:
@@ -318,7 +348,7 @@ def seo():
     w('en', 'assets/favicon.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#0c0a09"/><text x="32" y="47" font-family="Georgia,serif" font-size="44" text-anchor="middle" fill="#c8a26b">K</text></svg>')
 
 for lg in LANGS:
-    home(lg); [gallery(lg, k) for k in CLS]; prices(lg); reviews(lg); contact(lg)
+    home(lg); [gallery(lg, k) for k in CLS]; prices(lg); reviews(lg); contact(lg); book(lg)
 notfound(); seo()
 
 def pricing_assets():  # one source of truth: content.json -> JSON for the browser and the Worker
