@@ -289,5 +289,68 @@
       "name": "Anna",
       "text": "Really Great work we love it"
     }
-  ]
+  ],
+  "max_hours": 12,
+  "services": {
+    "personal": {
+      "label": "Personal photoshoot",
+      "type": "hourly",
+      "rate": 1200,
+      "min": 1
+    },
+    "commercial": {
+      "label": "Commercial photoshoot",
+      "type": "hourly",
+      "rate": 1500,
+      "min": 2
+    },
+    "event": {
+      "label": "Event photography",
+      "type": "hourly",
+      "rate": 1500,
+      "min": 2
+    },
+    "beauty": {
+      "label": "Studio Beauty Package",
+      "type": "package",
+      "price": 5100
+    },
+    "premium": {
+      "label": "Premium Experience",
+      "type": "package",
+      "price": 10200
+    }
+  },
+  "deposit": {
+    "personal": 500,
+    "default_percent": 50
+  },
+  "fixed_addons": {
+    "makeup": {
+      "label": "Makeup artist",
+      "price": 700,
+      "per": "artist"
+    },
+    "makeup_hair": {
+      "label": "Makeup artist and hair",
+      "price": 1000,
+      "per": "person"
+    },
+    "extra_retouch": {
+      "label": "Extra retouched photo",
+      "price": 10,
+      "per": "photo"
+    },
+    "video_edit": {
+      "label": "Video editing",
+      "price": 150,
+      "per": "video"
+    }
+  },
+  "quote_addons": {
+    "second_photographer": "from 1,200 AED / hour",
+    "assistant": "from 600 AED / hour",
+    "studio": "315-500 AED / hour",
+    "travel": "300-600 AED"
+  }
 }

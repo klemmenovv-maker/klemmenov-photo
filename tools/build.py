@@ -2,7 +2,7 @@
 Run: python3 tools/build.py   (after tools/optimize.py if photos changed)
 Numbers, contacts, reviews, photo selection: content.json.  All visible words, EN and RU: i18n.json.
 """
-import json, os, html, urllib.parse
+import json, os, html, shutil, urllib.parse
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 D = os.path.join(ROOT, 'docs')
 C = json.load(open(os.path.join(ROOT, 'content.json'), encoding='utf8'))
@@ -320,4 +320,13 @@ def seo():
 for lg in LANGS:
     home(lg); [gallery(lg, k) for k in CLS]; prices(lg); reviews(lg); contact(lg)
 notfound(); seo()
+
+def pricing_assets():  # one source of truth: content.json -> JSON for the browser and the Worker
+    keys = ['max_hours', 'services', 'deposit', 'fixed_addons', 'quote_addons']
+    data = json.dumps({k: C[k] for k in keys}, ensure_ascii=False, indent=2) + '\n'
+    os.makedirs(os.path.join(ROOT, 'worker'), exist_ok=True)
+    for path in (os.path.join(D, 'assets', 'pricing.json'), os.path.join(ROOT, 'worker', 'pricing.json')):
+        open(path, 'w', encoding='utf8').write(data)
+    shutil.copyfile(os.path.join(ROOT, 'shared', 'pricing.mjs'), os.path.join(D, 'assets', 'pricing.mjs'))
+pricing_assets()
 print('built', sorted(os.listdir(D)))

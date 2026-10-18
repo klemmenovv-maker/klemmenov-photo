@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import tempfile
@@ -21,6 +22,18 @@ def _check_html(html, files=()):
 
 
 class SiteTests(unittest.TestCase):
+    def test_pricing_json_matches_content(self):
+        content = json.load(open(os.path.join(ROOT, "content.json"), encoding="utf-8"))
+        keys = ["max_hours", "services", "deposit", "fixed_addons", "quote_addons"]
+        expected = {k: content[k] for k in keys}
+        for path in (os.path.join(ROOT, "docs", "assets", "pricing.json"),
+                     os.path.join(ROOT, "worker", "pricing.json")):
+            with open(path, encoding="utf-8") as f:
+                self.assertEqual(json.load(f), expected, path)
+        with open(os.path.join(ROOT, "shared", "pricing.mjs"), "rb") as a, \
+                open(os.path.join(ROOT, "docs", "assets", "pricing.mjs"), "rb") as b:
+            self.assertEqual(a.read(), b.read())
+
     def test_current_site_has_no_problems(self):
         self.assertEqual(check_site.check(os.path.join(ROOT, "docs")), [])
 
