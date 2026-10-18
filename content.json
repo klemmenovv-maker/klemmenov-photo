@@ -352,5 +352,73 @@
     "assistant": "from 600 AED / hour",
     "studio": "315-500 AED / hour",
     "travel": "300-600 AED"
-  }
+  },
+  "service_cards": [
+    {
+      "id": "personal",
+      "from": 1200,
+      "bullets": [
+        "20 color-graded images",
+        "5 retouched images"
+      ]
+    },
+    {
+      "id": "event",
+      "from": 1500,
+      "bullets": [
+        "Professional color grading",
+        "Commercial usage rights"
+      ]
+    },
+    {
+      "id": "commercial",
+      "from": 1500,
+      "bullets": [
+        "Professional color grading",
+        "Up to 5 outfits per hour (recommended)",
+        "5 edited images per outfit"
+      ]
+    }
+  ],
+  "how_it_works": [
+    {
+      "title": "Choose a shoot",
+      "text": "Pick personal, event or commercial."
+    },
+    {
+      "title": "Add extras and a date",
+      "text": "Select add-ons, hours and the day that suits you."
+    },
+    {
+      "title": "Pay the deposit",
+      "text": "The deposit holds your date."
+    },
+    {
+      "title": "Shoot day and delivery",
+      "text": "We shoot, then you receive your edited photos."
+    }
+  ],
+  "faq": [
+    {
+      "q": "What is the minimum booking?",
+      "a": "Commercial and event shoots start at 2 hours. Personal shoots start at 1 hour."
+    },
+    {
+      "q": "Is the studio included?",
+      "a": "No. Studio rental is not included in hourly shoots. Studio time is 315-500 AED per hour."
+    },
+    {
+      "q": "Which add-ons can I book?",
+      "a": "Extra retouched photo, 10 AED per photo. Makeup artist, 700 AED. Makeup artist and hair, 1,000 AED per person. Video editing, 150 AED per video."
+    },
+    {
+      "q": "Can I add a second photographer or an assistant?",
+      "a": "Yes. A second photographer is from 1,200 AED per hour and an assistant from 600 AED per hour."
+    },
+    {
+      "q": "What if I need to shoot outside Dubai?",
+      "a": "Travel outside Dubai is 300-600 AED. The number of people, time and details are agreed in advance."
+    }
+  ],
+  "terms_approved": false
 }

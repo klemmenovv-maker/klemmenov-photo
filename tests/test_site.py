@@ -34,6 +34,23 @@ class SiteTests(unittest.TestCase):
                 open(os.path.join(ROOT, "docs", "assets", "pricing.mjs"), "rb") as b:
             self.assertEqual(a.read(), b.read())
 
+    def test_service_cards_match_pricing(self):
+        content = json.load(open(os.path.join(ROOT, "content.json"), encoding="utf-8"))
+        hourly = {h["id"]: h for h in content["hourly"]}
+        cards = content["service_cards"]
+        self.assertEqual([c["id"] for c in cards], ["personal", "event", "commercial"])
+        for card in cards:
+            h = hourly[card["id"]]
+            self.assertEqual(card["from"], h["rate"])
+            self.assertEqual(card["bullets"], h["included"])
+        self.assertEqual(len(content["how_it_works"]), 4)
+        self.assertTrue(content["faq"])
+        for item in content["faq"]:
+            answer = item["a"].lower()
+            for word in ("refund", "cancel", "deposit", "delivery"):
+                self.assertNotIn(word, answer)
+        self.assertIs(content["terms_approved"], False)
+
     def test_current_site_has_no_problems(self):
         self.assertEqual(check_site.check(os.path.join(ROOT, "docs")), [])
 

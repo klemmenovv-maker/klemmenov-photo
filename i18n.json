@@ -232,6 +232,43 @@
           "150 AED per video"
         ]
       ]
+    },
+    "home_v2": {
+      "hero_from": "From 1,200 AED an hour",
+      "services_h": "Choose your shoot",
+      "from_label": "from",
+      "unit": "AED / hour",
+      "book_cta": "Book this shoot",
+      "how_h": "How it works",
+      "work_h": "Selected work",
+      "work_cta": "See all work",
+      "packages_h": "Packages",
+      "faq_h": "Questions",
+      "reviews_h": "What clients say",
+      "book_h": "Ready when you are",
+      "book_lead": "Choose your shoot and send the request in WhatsApp."
+    },
+    "work_hub": {
+      "title": "Selected work | Evgeny Klemmenov",
+      "desc": "Photo work by Evgeny Klemmenov: personal, event and commercial shoots in Dubai.",
+      "h1": "Selected work",
+      "lead": "A selection from personal, event and commercial shoots.",
+      "count_label": "frames"
+    },
+    "book_page": {
+      "title": "Book a shoot | Evgeny Klemmenov",
+      "desc": "Choose a shoot, add extras, pick a date and send your request in WhatsApp.",
+      "h1": "Book a shoot",
+      "steps": [
+        "Shoot",
+        "Extras",
+        "Date",
+        "Request"
+      ],
+      "request_btn": "Request in WhatsApp",
+      "back": "Back",
+      "next": "Next",
+      "summary_h": "Your request"
     }
   },
   "ru": {
