@@ -328,3 +328,15 @@ h1.name { margin-top: clamp(14px, 2vw, 26px); }
   .work-grid { columns: 2; }
 }
 #packages .pkgs { margin-top: clamp(36px, 5vw, 70px); }
+
+/* ---------- work hub, legal ---------- */
+.series-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(16px, 2.4vw, 36px); align-items: start; }
+.series a { display: block; text-decoration: none; }
+.series img { width: 100%; height: auto; background: var(--tone); }
+.series h2 { font-size: var(--fs-lead); margin-top: 18px; }
+.series .small { opacity: .8; margin: 4px 0 6px; }
+.series:hover .more span { transform: translateX(6px); }
+.legal-text { max-width: 760px; }
+.legal-text section { margin-bottom: clamp(28px, 4vw, 52px); }
+.legal-text p { margin-top: 12px; }
+@media (max-width: 900px) { .series-grid { grid-template-columns: 1fr; } }

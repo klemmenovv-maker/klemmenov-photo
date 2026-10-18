@@ -7,7 +7,7 @@
     "switch_label": "Русская версия",
     "nav": [
       "Main",
-      "Portfolio",
+      "Work",
       "Prices",
       "Reviews",
       "Contact"
@@ -99,8 +99,10 @@
       "jump": [
         "Hourly rates",
         "Packages",
-        "Additional services"
-      ]
+        "Additional services",
+        "Questions"
+      ],
+      "faq_h": "Questions"
     },
     "reviews": {
       "title": "Reviews — Klemmenov, photographer in Dubai",
@@ -269,6 +271,20 @@
       "back": "Back",
       "next": "Next",
       "summary_h": "Your request"
+    },
+    "legal_pages": {
+      "terms": {
+        "link": "Terms",
+        "title": "Terms of service | Klemmenov",
+        "desc": "Terms of service for photoshoots by Klemmenov in Dubai.",
+        "h1": "Terms"
+      },
+      "privacy": {
+        "link": "Privacy",
+        "title": "Privacy policy | Klemmenov",
+        "desc": "How Klemmenov handles personal data.",
+        "h1": "Privacy"
+      }
     }
   },
   "ru": {

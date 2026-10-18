@@ -420,5 +420,7 @@
       "a": "Travel outside Dubai is 300-600 AED. The number of people, time and details are agreed in advance."
     }
   ],
-  "terms_approved": false
+  "terms_approved": false,
+  "terms_text": [],
+  "privacy_text": []
 }

@@ -1,5 +1,7 @@
 import json
 import os
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -138,6 +140,145 @@ class SiteTests(unittest.TestCase):
             html = f.read()
         self.assertIn("<h1", html)
         self.assertIn("wa.me", html)
+
+
+class _Links(HTMLParser):
+    """Anchors with text, h3-card links, details count, ids, footer hrefs."""
+
+    def __init__(self):
+        super().__init__()
+        self.anchors, self.ids, self.details, self.hrefs = [], [], 0, []
+        self.nav, self._in_nav, self._a, self._txt = [], False, None, []
+        self.card_text = []
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if a.get("id"):
+            self.ids.append(a["id"])
+        if tag == "details":
+            self.details += 1
+        if tag == "nav" and a.get("aria-label") == "Menu":
+            self._in_nav = True
+        if tag == "a":
+            self.anchors.append(a)
+            self.hrefs.append(a.get("href", ""))
+            self._a = a
+            self._txt = []
+
+    def handle_endtag(self, tag):
+        if tag == "nav":
+            self._in_nav = False
+        if tag == "a" and self._a is not None:
+            if self._in_nav:
+                self.nav.append(("".join(self._txt).strip(), self._a.get("href")))
+            self._a = None
+
+    def handle_data(self, data):
+        if self._a is not None:
+            self._txt.append(data)
+        self.card_text.append(data)
+
+
+def _parse(path):
+    p = _Links()
+    with open(path, encoding="utf-8") as f:
+        p.feed(f.read())
+    return p
+
+
+def _build(content, out):
+    env = dict(os.environ, SITE_CONTENT=content, SITE_OUT=out)
+    return subprocess.run([sys.executable, os.path.join(ROOT, "tools", "build.py")],
+                          cwd=ROOT, env=env, capture_output=True, text=True)
+
+
+def _temp_site(approved, terms=None):
+    with open(os.path.join(ROOT, "content.json"), encoding="utf-8") as f:
+        content = json.load(f)
+    content["terms_approved"] = approved
+    if terms is not None:
+        content["terms_text"], content["privacy_text"] = terms, terms
+    tmp = tempfile.mkdtemp()
+    out = os.path.join(tmp, "out")
+    shutil.copytree(os.path.join(ROOT, "docs"), out, ignore=shutil.ignore_patterns("terms", "privacy"))
+    cpath = os.path.join(tmp, "content.json")
+    with open(cpath, "w", encoding="utf-8") as f:
+        json.dump(content, f)
+    return tmp, cpath, out
+
+
+class WorkHubTests(unittest.TestCase):
+    def test_nav_work_points_to_hub(self):
+        p = _parse(os.path.join(ROOT, "docs", "index.html"))
+        self.assertEqual([t for t, _ in p.nav], ["Main", "Work", "Prices", "Reviews", "Contact"])
+        self.assertEqual(dict(p.nav)["Work"], "work/")
+        more = [h for sec, h, c in _home().links if sec == "work" and "more" in c.split()]
+        self.assertEqual(more, ["work/"])
+
+    def test_work_hub_counts_match_galleries(self):
+        hub = os.path.join(ROOT, "docs", "work", "index.html")
+        with open(hub, encoding="utf-8") as f:
+            html = f.read()
+        self.assertIn("<h1", html)
+        p = _parse(hub)
+        for key in ("personal", "events", "commercial"):
+            self.assertIn(f"../{key}/", p.hrefs)
+            g = _parse(os.path.join(ROOT, "docs", key, "index.html"))
+            n = sum(1 for a in g.anchors if a.get("href", "").endswith(".webp"))
+            self.assertGreater(n, 0)
+            self.assertIn(f'data-count="{n}"', html, key)
+
+    def test_prices_has_faq_and_jump_links(self):
+        path = os.path.join(ROOT, "docs", "prices", "index.html")
+        p = _parse(path)
+        for h in ("#rates", "#packages", "#addons", "#faq"):
+            self.assertIn(h, p.hrefs)
+        for i in ("rates", "packages", "addons", "faq"):
+            self.assertIn(i, p.ids)
+        content = json.load(open(os.path.join(ROOT, "content.json"), encoding="utf-8"))
+        self.assertEqual(p.details, len(content["faq"]))
+
+    def test_terms_gated(self):
+        tmp, cpath, out = _temp_site(False)
+        try:
+            r = _build(cpath, out)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertFalse(os.path.exists(os.path.join(out, "terms")))
+            self.assertFalse(os.path.exists(os.path.join(out, "privacy")))
+            for root, _, files in os.walk(out):
+                for fn in files:
+                    if fn.endswith((".html", ".xml")):
+                        t = open(os.path.join(root, fn), encoding="utf-8").read()
+                        self.assertNotIn('href="terms/', t)
+                        if fn.endswith(".xml"):
+                            self.assertNotIn("/terms/", t)
+                            self.assertNotIn("/privacy/", t)
+                        self.assertNotRegex(t, r'href="(\.\./)*(terms|privacy)/')
+            shutil.rmtree(tmp)
+            terms = [{"h": "Scope", "p": ["Test paragraph."]}]
+            tmp, cpath, out = _temp_site(True, terms)
+            r = _build(cpath, out)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            for d in ("terms", "privacy"):
+                self.assertTrue(os.path.isfile(os.path.join(out, d, "index.html")))
+            home = _parse(os.path.join(out, "index.html"))
+            self.assertIn("terms/", home.hrefs)
+            self.assertIn("privacy/", home.hrefs)
+            sm = open(os.path.join(out, "sitemap.xml"), encoding="utf-8").read()
+            self.assertIn("/terms/</loc>", sm)
+            self.assertIn("/privacy/</loc>", sm)
+            self.assertEqual(check_site.check(out), [])
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_terms_true_without_text_raises(self):
+        tmp, cpath, out = _temp_site(True)
+        try:
+            r = _build(cpath, out)
+            self.assertNotEqual(r.returncode, 0)
+            self.assertIn("terms_text", r.stderr)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
 
 
 if __name__ == "__main__":

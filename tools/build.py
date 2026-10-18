@@ -4,12 +4,15 @@ Numbers, contacts, reviews, photo selection: content.json.  All visible words, E
 """
 import json, os, html, shutil, urllib.parse
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-D = os.path.join(ROOT, 'docs')
-C = json.load(open(os.path.join(ROOT, 'content.json'), encoding='utf8'))
+D = os.environ.get('SITE_OUT') or os.path.join(ROOT, 'docs')   # SITE_OUT / SITE_CONTENT: tests build into a temp dir
+C = json.load(open(os.environ.get('SITE_CONTENT') or os.path.join(ROOT, 'content.json'), encoding='utf8'))
 I = json.load(open(os.path.join(ROOT, 'i18n.json'), encoding='utf8'))
 M = json.load(open(os.path.join(D, 'data', 'manifest.json')))
 SITE = C['site_url'].rstrip('/')
 e = html.escape
+TERMS = bool(C.get('terms_approved'))
+if TERMS and not (C.get('terms_text') and C.get('privacy_text')):
+    raise SystemExit('content.json: terms_approved is true but terms_text / privacy_text is empty; fill both lists or set terms_approved to false')
 LANGS = ['en']   # add 'ru' back to rebuild the Russian version (strings are kept in i18n.json)
 
 class Ctx:  # per-page context
@@ -43,7 +46,7 @@ def fig(x, setname, n, sizes, alt, d=0):
 def strip(x, items):
     return '<div class="strip">' + ''.join(fig(x, s, n, '(min-width:900px) 25vw, 50vw', x.L['alt']['strip'], d=i*100) for i, (s, n) in enumerate(items)) + '</div>'
 
-NAVP = ['', 'personal/', 'prices/', 'reviews/', 'contact/']
+NAVP = ['', 'work/', 'prices/', 'reviews/', 'contact/']
 
 def head(x, title, desc, og='assets/og.jpg'):
     L = x.L; url = f'{SITE}/{x.pfx}{x.path}'
@@ -91,6 +94,7 @@ def foot(x):
     L = x.L
     keys = ['personal/', 'events/', 'commercial/', 'prices/', 'reviews/']
     links = ''.join(f'<a href="{x.home}{k}">{n}</a>' for k, n in zip(keys, L['foot_links']))
+    if TERMS: links += ''.join(f'<a href="{x.home}{k}/">{L["legal_pages"][k]["link"]}</a>' for k in ('terms', 'privacy'))
     return f'''</main>
 <footer>
 <div class="foot-top">
@@ -136,6 +140,9 @@ def reviews_html(x, names=None, mode='rows'):
         out.append(f'<article class="review rv {"flip" if k % 2 else ""}" style="--d:{(k%3)*90}ms"><figure>{ph}</figure><blockquote class="quote">{paras}<cite>{e(r["name"])}{h}</cite></blockquote></article>')
     return ''.join(out)
 
+def faq_html():
+    return ''.join(f'<details class="rv"><summary>{e(f["q"])}</summary><p>{e(f["a"])}</p></details>' for f in C['faq'])
+
 def fitstyle(word):  # per-word fit for the giant headings (CSS reads --n)
     return f'style="--n:{len(word)}"'
 
@@ -178,7 +185,7 @@ def home(lang):
         inc = ''.join(f'<li>{e(i)}</li>' for i in tr['included'])
         pk += (f'<article class="pkg rv"><h3>{e(tr["name"])}</h3><p class="price">{money(p["price"], L)}<small>{P["pk_unit"]}</small></p>'
                f'<ul>{inc}</ul><a class="btn" href="book/?service={sid}">{V["book_cta"]}</a></article>')
-    faq = ''.join(f'<details class="rv"><summary>{e(f["q"])}</summary><p>{e(f["a"])}</p></details>' for f in C['faq'])
+    faq = faq_html()
     t += f'''
 <section class="ch-black hero" id="hero" aria-labelledby="top">
 <div class="tri">{tri}</div>
@@ -200,7 +207,7 @@ def home(lang):
 </div></section>
 
 <section class="ch-black pad" id="work"><div class="wrap">
-<div class="chapter-head"><h2 class="rv sub">{V['work_h']}</h2><a class="more rv" href="personal/">{V['work_cta']} <span>→</span></a></div>
+<div class="chapter-head"><h2 class="rv sub">{V['work_h']}</h2><a class="more rv" href="work/">{V['work_cta']} <span>→</span></a></div>
 {work}
 </div></section>
 
@@ -240,8 +247,7 @@ def book(lang):
 # ---------------------------------------------------------------- GALLERIES
 CLS = {'personal': 'ch-black', 'events': 'ch-burgundy', 'commercial': 'ch-white'}
 SVC = {'personal': 'personal', 'events': 'event', 'commercial': 'commercial'}
-def gallery(lang, key):
-    x = Ctx(lang, f'{key}/'); L = x.L; g = L['gal'][key]
+def gallery_items(key):  # (set, n) of every frame in the gallery page; the hub counts with this too
     ex = set(C['exclude'].get(key, []))
     items = [(key, int(m['id'].split('-')[1])) for m in M[key] if int(m['id'].split('-')[1]) not in ex]
     extra = C.get('extra_sets', {}).get(key)          # e.g. personal gets the 'creative' set mixed in
@@ -250,6 +256,11 @@ def gallery(lang, key):
         step = max(3, len(items) // (len(ext) + 1))
         for j, it in enumerate(ext):
             items.insert(min(len(items), 2 + j * (step + 1)), it)
+    return items
+
+def gallery(lang, key):
+    x = Ctx(lang, f'{key}/'); L = x.L; g = L['gal'][key]
+    items = gallery_items(key)
     sv = next(h for h in hourly(x) if h['id'] == SVC[key])
     t = head(x, g['title'], g['desc'])
     word = L['ch'][key]
@@ -266,6 +277,35 @@ def gallery(lang, key):
     more = ''.join(f'<a class="more" href="{x.home}{k}/">{L["ch_link"][k]} <span>→</span></a>' for k in others)
     t += f'''</div>
 <div class="wrap" style="padding-bottom:clamp(60px,8vw,110px);display:flex;gap:clamp(20px,4vw,60px);flex-wrap:wrap">{more}<a class="more" href="../prices/">{L['nav'][2]} <span>→</span></a></div>
+</section>
+'''
+    w(lang, f'{key}/index.html', t + foot(x))
+
+# ---------------------------------------------------------------- WORK HUB
+def work(lang):
+    x = Ctx(lang, 'work/'); L = x.L; H = L['work_hub']
+    t = head(x, H['title'], H['desc'])
+    cards = ''
+    for k, key in enumerate(CLS):
+        n = len(gallery_items(key)); ex = set(C['exclude'].get(key, []))
+        pid = next(i for i in C['collage'][key] if i not in ex)
+        cards += (f'<article class="series rv" style="--d:{k*90}ms" data-count="{n}"><a href="{x.home}{key}/">{img(x, key, pid, "(min-width:900px) 30vw, 92vw", L["alt"][key])}'
+                  f'<h2>{L["ch"][key]}</h2><p class="small">{n} {H["count_label"]}</p><span class="more">{L["ch_link"][key]} <span>→</span></span></a></article>')
+    t += f'''<section class="ch-black">
+<div class="page-head"><h1 class="rv" {fitstyle(H['h1'])}>{H['h1']}</h1><div class="row"><p class="lead rv" style="--d:80ms">{H['lead']}</p></div></div>
+<div class="wrap" style="padding-bottom:clamp(60px,8vw,110px)"><div class="series-grid">{cards}</div></div>
+</section>
+'''
+    w(lang, 'work/index.html', t + foot(x))
+
+# ---------------------------------------------------------------- LEGAL (only when content.json terms_approved is true)
+def legal(lang, key):
+    x = Ctx(lang, f'{key}/'); L = x.L; G = L['legal_pages'][key]
+    secs = ''.join(f'<section class="rv"><h2 class="sub">{e(s["h"])}</h2>' + ''.join(f'<p>{e(p)}</p>' for p in s['p']) + '</section>' for s in C[f'{key}_text'])
+    t = head(x, G['title'], G['desc'])
+    t += f'''<section class="ch-black">
+<div class="page-head"><h1 class="rv" {fitstyle(G['h1'])}>{G['h1']}</h1></div>
+<div class="wrap legal-text" style="padding-bottom:clamp(60px,8vw,110px)">{secs}</div>
 </section>
 '''
     w(lang, f'{key}/index.html', t + foot(x))
@@ -289,7 +329,7 @@ def prices(lang):
     addons = ''.join(f'<li class="rv"><span>{e(a)}</span><strong>{e(p)}</strong></li>' for a, p in L['addons']['items'])
     t += f'''<section class="ch-black">
 <div class="page-head"><h1 class="rv" {fitstyle(P['h1'])}>{P['h1']}</h1><div class="row"><p class="lead rv" style="--d:80ms">{P['lead']}</p></div>
-<nav class="jump rv" aria-label="{P['jump'][0]}"><a href="#rates">{P['jump'][0]}</a><a href="#packages">{P['jump'][1]}</a><a href="#addons">{P['jump'][2]}</a></nav></div>
+<nav class="jump rv" aria-label="{P['jump'][0]}"><a href="#rates">{P['jump'][0]}</a><a href="#packages">{P['jump'][1]}</a><a href="#addons">{P['jump'][2]}</a><a href="#faq">{P['jump'][3]}</a></nav></div>
 <div class="wrap" style="padding-bottom:clamp(60px,8vw,110px)"><div class="calc"><div></div><div class="rv">{calc_block(x)}</div></div></div>
 {strip(x, [('commercial', 13), ('personal', 35), ('events', 60), ('commercial', 3)])}
 <div id="rates" style="height:clamp(60px,8vw,110px)"></div>
@@ -302,6 +342,10 @@ def prices(lang):
 <h2 class="rv sub" style="margin-bottom:clamp(30px,4vw,56px)">{L['addons']['h']}</h2>
 <ul class="addons">{addons}</ul>
 <p class="lead rv" style="margin-top:clamp(28px,4vw,56px)">{L['addons']['note']}</p>
+</div></section>
+<section class="ch-black pad" id="faq"><div class="wrap">
+<h2 class="rv sub">{P['faq_h']}</h2>
+<div class="faq">{faq_html()}</div>
 </div></section>
 '''
     w(lang, 'prices/index.html', t + foot(x))
@@ -337,7 +381,7 @@ def notfound():
     w('en', '404.html', t + foot(x))
 
 def seo():
-    pages = ['', 'personal/', 'events/', 'commercial/', 'prices/', 'reviews/', 'contact/', 'book/']
+    pages = ['', 'work/', 'personal/', 'events/', 'commercial/', 'prices/', 'reviews/', 'contact/', 'book/'] + (['terms/', 'privacy/'] if TERMS else [])
     if len(LANGS) < 2:
         urls = ''.join(f'<url><loc>{SITE}/{p}</loc></url>\n' for p in pages)
     else:
@@ -348,7 +392,12 @@ def seo():
     w('en', 'assets/favicon.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#0c0a09"/><text x="32" y="47" font-family="Georgia,serif" font-size="44" text-anchor="middle" fill="#c8a26b">K</text></svg>')
 
 for lg in LANGS:
-    home(lg); [gallery(lg, k) for k in CLS]; prices(lg); reviews(lg); contact(lg); book(lg)
+    home(lg); work(lg); [gallery(lg, k) for k in CLS]; prices(lg); reviews(lg); contact(lg); book(lg)
+if TERMS:
+    for lg in LANGS: legal(lg, 'terms'); legal(lg, 'privacy')
+else:   # gate closed: no stale legal pages
+    for lg in LANGS:
+        for k in ('terms', 'privacy'): shutil.rmtree(os.path.join(D, 'ru' if lg == 'ru' else '', k), ignore_errors=True)
 notfound(); seo()
 
 def pricing_assets():  # one source of truth: content.json -> JSON for the browser and the Worker
