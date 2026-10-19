@@ -194,7 +194,7 @@ class SiteTests(unittest.TestCase):
         with open(os.path.join(ROOT, "docs", "book", "index.html"), encoding="utf-8") as f:
             html = f.read()
         self.assertNotIn("Pay deposit", html)
-        self.assertRegex(html, r'<script type="module" src="\.\./assets/book\.mjs"[^>]*></script>')
+        self.assertRegex(html, r'<script type="module" src="\.\./assets/book\.mjs(?:\?v=[a-f0-9]+)?"[^>]*></script>')
         for step in ("service", "extras", "date", "contact"):
             self.assertIn(f'data-step="{step}"', html)
         m = re.search(r"<noscript>(.*?)</noscript>", html, re.S)

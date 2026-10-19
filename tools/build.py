@@ -2,7 +2,8 @@
 Run: python3 tools/build.py   (after tools/optimize.py if photos changed)
 Numbers, contacts, reviews, photo selection: content.json.  All visible words, EN and RU: i18n.json.
 """
-import json, os, html, shutil, urllib.parse
+import json, os, html, shutil, urllib.parse, hashlib
+from pathlib import Path
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 D = os.environ.get('SITE_OUT') or os.path.join(ROOT, 'docs')   # SITE_OUT / SITE_CONTENT: tests build into a temp dir
 C = json.load(open(os.environ.get('SITE_CONTENT') or os.path.join(ROOT, 'content.json'), encoding='utf8'))
@@ -29,6 +30,8 @@ if SCHEDULE_API:
     if not ((_s.scheme == 'https' or (_s.scheme == 'http' and _s.hostname in ('localhost', '127.0.0.1'))) and _s.hostname and not _s.username and not _s.password and not _s.query and not _s.fragment):
         raise SystemExit('booking_schedule_api must be an HTTPS URL (HTTP only for localhost)')
 BOOKING_CFG = json.load(open(os.path.join(ROOT, 'worker', 'booking-config.json'), encoding='utf8'))
+_assets = Path(ROOT) / 'docs' / 'assets'
+ASSET_VERSION = hashlib.sha256(b''.join(p.read_bytes() for p in sorted([*_assets.glob('*.mjs'), _assets / 'style.css']))).hexdigest()[:12]
 LANGS = ['en']   # add 'ru' back to rebuild the Russian version (strings are kept in i18n.json)
 
 class Ctx:  # per-page context
@@ -89,7 +92,7 @@ def head(x, title, desc, og='assets/og.jpg', noindex=False):
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="{x.up}assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="{x.up}assets/fonts.css">
-<link rel="stylesheet" href="{x.up}assets/style.css">
+<link rel="stylesheet" href="{x.up}assets/style.css?v={ASSET_VERSION}">
 <script type="application/ld+json">{ld}</script>
 <script>document.documentElement.className+=" js"</script>
 </head>
@@ -364,7 +367,7 @@ def book(lang):  # request mode (booking_api empty): WhatsApp message only. Live
 '''
     fb = ("<script>window.bookFallback=function(){var m=document.querySelector('[data-nomodule]'),a=document.querySelector('.book-app');"
           "if(m)m.hidden=false;if(a)a.style.display='none'}</script>\n<script nomodule>bookFallback()</script>\n"
-          '<script type="module" src="../assets/book.mjs" onerror="bookFallback()"></script>\n')
+          f'<script type="module" src="../assets/book.mjs?v={ASSET_VERSION}" onerror="bookFallback()"></script>\n')
     t += foot(x).replace('</body>', fb + '</body>')
     w(lang, 'book/index.html', t)
 
