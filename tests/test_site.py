@@ -187,7 +187,7 @@ class SiteTests(unittest.TestCase):
         with open(os.path.join(ROOT, "docs", "book", "index.html"), encoding="utf-8") as f:
             html = f.read()
         self.assertNotIn("Pay deposit", html)
-        self.assertIn('<script type="module" src="../assets/book.mjs"></script>', html)
+        self.assertRegex(html, r'<script type="module" src="\.\./assets/book\.mjs"[^>]*></script>')
         for step in ("service", "extras", "date", "contact"):
             self.assertIn(f'data-step="{step}"', html)
         m = re.search(r"<noscript>(.*?)</noscript>", html, re.S)
@@ -196,6 +196,12 @@ class SiteTests(unittest.TestCase):
         self.assertNotIn("terms", html.lower().split("<main")[1].split("</main>")[0])
         with open(os.path.join(ROOT, "content.json"), encoding="utf-8") as f:
             self.assertEqual(json.load(f).get("booking_api"), "")
+        req = re.search(r'<a class="btn" data-request href="([^"]*)"[^>]*>', html)
+        self.assertIsNotNone(req)
+        self.assertTrue(req.group(1).startswith("https://wa.me/") and "text=" in req.group(1))
+        self.assertNotIn("aria-disabled", req.group(0))
+        self.assertIn("<script nomodule>", html)
+        self.assertIn("data-nomodule", html)
         self.assertTrue(os.path.exists(os.path.join(ROOT, "docs", "assets", "book-ui.mjs")))
         self.assertTrue(os.path.exists(os.path.join(ROOT, "docs", "assets", "book.mjs")))
 

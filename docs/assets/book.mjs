@@ -27,6 +27,7 @@ async function init() {
     return;
   }
 
+  let last = null;
   const state = { serviceId: null, hours: 2, addons: {}, quote: new Set() };
   const BLOCKED = ['makeup', 'makeup_hair'];
   const svc = () => (state.serviceId ? config.services[state.serviceId] : null);
@@ -51,6 +52,9 @@ async function init() {
   const initial = parseServiceParam(location.search, config.services);
   if (initial) selectService(initial);
 
+  // aria-disabled instead of disabled: a focused button must keep focus when it reaches its bound
+  function lock(btn, on) { if (on) btn.setAttribute('aria-disabled', 'true'); else btn.removeAttribute('aria-disabled'); }
+
   function syncControls() {
     const sv = svc();
     const pkg = !!sv && sv.type === 'package';
@@ -58,16 +62,16 @@ async function init() {
     note.hidden = !pkg;
     if (sv && !pkg) {
       hoursOut.textContent = `${state.hours} ${state.hours === 1 ? S.hour : S.hours}`;
-      $('.minus', hoursBox).disabled = state.hours <= sv.min;
-      $('.plus', hoursBox).disabled = state.hours >= config.max_hours;
+      lock($('.minus', hoursBox), state.hours <= sv.min);
+      lock($('.plus', hoursBox), state.hours >= config.max_hours);
     }
     for (const row of $$('.xrow')) {
       const id = row.dataset.addon;
       const blocked = pkg && BLOCKED.includes(id);
       const q = state.addons[id] || 0;
       $('output', row).textContent = q;
-      $('.minus', row).disabled = blocked || q <= 0;
-      $('.plus', row).disabled = blocked || q >= Number(row.dataset.max);
+      lock($('.minus', row), blocked || q <= 0);
+      lock($('.plus', row), blocked || q >= Number(row.dataset.max));
       row.classList.toggle('off', blocked);
     }
   }
@@ -75,8 +79,9 @@ async function init() {
   function render() {
     syncControls();
     summary.innerHTML = '';
+    last = null;
     request.setAttribute('aria-disabled', 'true');
-    request.removeAttribute('href');
+    request.href = waUrl(S.wa, S.greeting);
     if (!state.serviceId) { summary.append(el('p', 'small', S.empty)); return; }
 
     const addons = { ...state.addons };
@@ -103,9 +108,16 @@ async function init() {
     total.append(el('span', 'small', S.total), (() => { const n = el('strong', '', formatAed(r.total)); n.append(el('small', '', ` ${S.currency}`)); return n; })());
     summary.append(total);
 
-    const text = buildWhatsAppText(r, {
+    last = { r, addons };
+    updateHref();
+  }
+
+  // text fields only touch the link, never the aria-live summary
+  function updateHref() {
+    if (!last) return;
+    const text = buildWhatsAppText(last.r, {
       greeting: S.greeting, name: field('f-name'), reach: field('f-reach'), notes: field('f-notes'), preferredDate: field('f-date'),
-    }, addons, { quoteLabels: S.quoteLabels });
+    }, last.addons, { quoteLabels: S.quoteLabels });
     request.href = waUrl(S.wa, text);
     request.removeAttribute('aria-disabled');
   }
@@ -116,12 +128,13 @@ async function init() {
     else if (t.name === 'quote') t.checked ? state.quote.add(t.value) : state.quote.delete(t.value);
     render();
   });
-  root.addEventListener('input', (ev) => { if (ev.target.matches('input[type="text"], textarea')) render(); });
+  root.addEventListener('input', (ev) => { if (ev.target.matches('input[type="text"], textarea')) updateHref(); });
   root.addEventListener('click', (ev) => {
     const b = ev.target.closest('button');
     if (!b) return;
     const dir = b.classList.contains('plus') ? 1 : b.classList.contains('minus') ? -1 : 0;
     if (!dir) return;
+    if (b.getAttribute('aria-disabled') === 'true') return;
     const row = b.closest('.xrow');
     if (row) {
       const id = row.dataset.addon;

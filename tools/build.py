@@ -263,6 +263,7 @@ def book(lang):  # request mode: the page only builds a WhatsApp message, nothin
     t += f'''<section class="ch-black book">
 <div class="page-head"><h1 class="rv" {fitstyle(B['h1'])}>{B['h1']}</h1></div>
 <noscript><div class="wrap book-ns"><p class="lead">{B['noscript']}</p><a class="btn" href="{wa(x, L['wa_book'])}">{B['noscript_btn']}</a></div></noscript>
+<div class="wrap book-nm" data-nomodule hidden><p class="lead">{B['noscript']}</p><a class="btn" href="{wa(x, L['wa_book'])}">{B['noscript_btn']}</a></div>
 <div class="wrap book-app" data-book="{cfg}">
 <form class="book-grid" novalidate>
 <div class="book-steps">
@@ -294,14 +295,17 @@ def book(lang):  # request mode: the page only builds a WhatsApp message, nothin
 <div class="field"><label for="f-name">{B['name_label']}</label><input id="f-name" name="name" type="text" autocomplete="name"></div>
 <div class="field"><label for="f-reach">{B['reach_label']}</label><input id="f-reach" name="reach" type="text" autocomplete="tel" placeholder="{e(B['reach_ph'])}"></div>
 <div class="field"><label for="f-notes">{B['notes_label']}</label><textarea id="f-notes" name="notes" rows="3" placeholder="{e(B['notes_ph'])}"></textarea></div>
-<a class="btn" data-request href="#" target="_blank" rel="noopener" aria-disabled="true">{B['request_btn']}</a>
+<a class="btn" data-request href="{wa(x, L['wa_book'])}" target="_blank" rel="noopener">{B['request_btn']}</a>
 <p class="small note">{B['request_note']}</p>
 </section>
 </form>
 </div>
 </section>
 '''
-    t += foot(x).replace('</body>', '<script type="module" src="../assets/book.mjs"></script>\n</body>')
+    fb = ("<script>window.bookFallback=function(){var m=document.querySelector('[data-nomodule]'),a=document.querySelector('.book-app');"
+          "if(m)m.hidden=false;if(a)a.style.display='none'}</script>\n<script nomodule>bookFallback()</script>\n"
+          '<script type="module" src="../assets/book.mjs" onerror="bookFallback()"></script>\n')
+    t += foot(x).replace('</body>', fb + '</body>')
     w(lang, 'book/index.html', t)
 
 # ---------------------------------------------------------------- GALLERIES
