@@ -1,4 +1,5 @@
 // Telegram notifier for the owner. Only fetch + standard APIs (Cloudflare Worker safe).
+import { timeoutSignal, timeoutMs } from './fetch-timeout.mjs';
 const API = 'https://api.telegram.org';
 const MAX_TEXT = 4000;
 const MAX_NOTES = 300;
@@ -40,16 +41,19 @@ export async function notify(env, text, fetchImpl = fetch) {
       parse_mode: 'HTML',
       disable_web_page_preview: true,
     }),
+    signal: timeoutSignal(timeoutMs(env)),
   };
   let res;
   try {
     res = await fetchImpl(`${API}/bot${token}/sendMessage`, init);
   } catch {
+    if (init.signal.aborted) throw new TelegramError('Telegram request timed out', 0);
     // The URL contains the token, so the original error is deliberately dropped.
     throw new TelegramError('Telegram request failed (network error)', 0);
   }
   let body = '';
   try { body = await res.text(); } catch { /* ignore */ }
+  if (init.signal.aborted) throw new TelegramError('Telegram request timed out', 0);
   if (!res.ok) throw new TelegramError(`Telegram responded with HTTP ${res.status}`, res.status, body, token);
   let data;
   try { data = JSON.parse(body); } catch { data = null; }

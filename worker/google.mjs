@@ -1,5 +1,6 @@
 // Minimal Google Calendar client (service account, JWT bearer flow).
 // Only fetch + WebCrypto + standard APIs (Cloudflare Worker safe).
+import { timeoutSignal, timeoutMs } from './fetch-timeout.mjs';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const API = 'https://www.googleapis.com/calendar/v3';
 const SCOPE = 'https://www.googleapis.com/auth/calendar';
@@ -88,12 +89,24 @@ export async function signJwt(serviceAccount, scope, now) {
   return `${input}.${b64url(sig)}`;
 }
 
-async function doFetch(fetchImpl, url, init) {
-  try { return await fetchImpl(url, init); } catch { throw new GoogleError('Google request failed (network error)', 0); }
+// Every request gets a timeout signal; a timeout is GoogleError status 0.
+async function doFetch(env, fetchImpl, url, init) {
+  const signal = timeoutSignal(timeoutMs(env));
+  let res;
+  try {
+    res = await fetchImpl(url, { ...init, signal });
+  } catch {
+    if (signal.aborted) throw new GoogleError('Google request timed out', 0);
+    throw new GoogleError('Google request failed (network error)', 0);
+  }
+  return { res, signal };
 }
 
-async function readText(res) {
-  try { return await res.text(); } catch { return ''; }
+async function readText({ res, signal }) {
+  let text = '';
+  try { text = await res.text(); } catch { /* ignore */ }
+  if (signal.aborted) throw new GoogleError('Google request timed out', 0);
+  return text;
 }
 
 async function getToken(env, sa, fetchImpl) {
@@ -104,12 +117,13 @@ async function getToken(env, sa, fetchImpl) {
   const jwt = await signJwt(sa, SCOPE, now);
   const secrets = secretsOf(sa, [jwt]);
   const body = new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: jwt }).toString();
-  const res = await doFetch(fetchImpl, TOKEN_URL, {
+  const sent = await doFetch(env, fetchImpl, TOKEN_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body,
   });
-  const text = await readText(res);
+  const { res } = sent;
+  const text = await readText(sent);
   if (!res.ok) throw new GoogleError(`Google token endpoint responded with HTTP ${res.status}`, res.status, text, secrets);
   let data;
   try { data = JSON.parse(text); } catch { throw new GoogleError('Google token endpoint returned invalid JSON', res.status, text, secrets); }
@@ -124,12 +138,13 @@ async function getToken(env, sa, fetchImpl) {
 async function api(env, sa, url, payload, fetchImpl, retried = false) {
   const token = await getToken(env, sa, fetchImpl);
   const secrets = secretsOf(sa, [token]);
-  const res = await doFetch(fetchImpl, url, {
+  const sent = await doFetch(env, fetchImpl, url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify(payload),
   });
-  const text = await readText(res);
+  const { res } = sent;
+  const text = await readText(sent);
   if ((res.status === 401 || res.status === 403) && !retried) {
     tokenCache.delete(sa.client_email);
     return api(env, sa, url, payload, fetchImpl, true);

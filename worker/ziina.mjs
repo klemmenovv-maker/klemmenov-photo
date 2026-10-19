@@ -1,4 +1,5 @@
 // Minimal Ziina payments client. Only fetch + standard APIs (Cloudflare Worker safe).
+import { timeoutSignal, timeoutMs } from './fetch-timeout.mjs';
 const DEFAULT_BASE = 'https://api-v2.ziina.com/api';
 
 export class ZiinaError extends Error {
@@ -37,14 +38,17 @@ async function call(env, method, path, payload, fetchImpl) {
     },
   };
   if (payload !== undefined) init.body = JSON.stringify(payload);
+  init.signal = timeoutSignal(timeoutMs(env));
   let res;
   try {
     res = await fetchImpl(`${baseUrl(env)}${path}`, init);
   } catch {
+    if (init.signal.aborted) throw new ZiinaError('Ziina request timed out', 0);
     throw new ZiinaError('Ziina request failed (network error)', 0);
   }
   let text = '';
   try { text = await res.text(); } catch { /* ignore */ }
+  if (init.signal.aborted) throw new ZiinaError('Ziina request timed out', 0);
   if (!res.ok) throw new ZiinaError(`Ziina responded with HTTP ${res.status}`, res.status, text, env.ZIINA_TOKEN);
   let data;
   try { data = JSON.parse(text); } catch { throw new ZiinaError('Ziina returned invalid JSON', res.status, text, env.ZIINA_TOKEN); }
