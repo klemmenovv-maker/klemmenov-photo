@@ -215,7 +215,7 @@ test('pollBooking stops on expired and unknown', async () => {
 test('pollBooking times out as pending', async () => {
   let n = 0;
   const f = fakeFetch(json(200, { ...BOOKING, status: 'held' }));
-  const r = await pollBooking(API, ID, f, { intervalMs: 3000, timeoutMs: 60000, sleep: async () => { n++; } });
+  const r = await pollBooking(API, ID, f, { intervalMs: 3000, timeoutMs: 60000, now: () => 0, sleep: async () => { n++; } });
   assert.deepEqual(r, { status: 'pending' });
   assert.equal(n, 20);
   assert.equal(f.calls.length, 21);
