@@ -193,7 +193,6 @@ test('markPaid after expiry flags paid_needs_attention when the slot was retaken
   assert.equal(r.conflict, true);
   assert.equal(r.booking.status, 'paid_needs_attention');
   assert.equal(r.booking.reason, 'slot_taken_after_expiry');
-  assert.equal(r.booking.paidAt, t === r.booking.paidAt ? t : r.booking.paidAt);
   const again = await markPaid(kv, id, intent('pi_1'), t);
   assert.equal(again.changed, false);
 });
