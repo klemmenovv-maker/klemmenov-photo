@@ -322,6 +322,41 @@
         "person": "person",
         "photo": "photo",
         "video": "video"
+      },
+      "live": {
+        "desc": "Choose a shoot, pick a free date and time, and pay the deposit to hold your slot.",
+        "step_date": "Date and time",
+        "summary_h": "Your booking",
+        "slots_loading": "Loading free times…",
+        "slots_pick_service": "Choose a shoot first to see free times.",
+        "slots_empty": "No free times in these dates. Show more days or request in WhatsApp.",
+        "days_label": "Available days",
+        "times_label": "Free times",
+        "more_days": "Show more days",
+        "retry": "Try again",
+        "tz": "Dubai time (UTC+4)",
+        "tz_note": "Times are in Dubai time, which differs from the time zone on your device.",
+        "chosen": "Chosen: {when} Dubai time",
+        "terms_before": "I accept the ",
+        "terms_link": "booking terms",
+        "terms_after": " and the ",
+        "pay_btn": "Pay deposit",
+        "pay_busy": "Opening payment…",
+        "pay_note": "You pay the deposit now on a secure Ziina page. The rest is paid on the day of the shoot.",
+        "fallback_btn": "Request in WhatsApp instead",
+        "deposit": "Deposit due now: {n} AED",
+        "remaining": "Remaining on the day: {n} AED",
+        "missing": "To pay, still needed: {list}.",
+        "missing_items": {
+          "service": "a shoot",
+          "date": "a date and time",
+          "name": "your name",
+          "contact": "WhatsApp or Telegram",
+          "terms": "accepting the terms"
+        },
+        "date_pref": "{when} Dubai time",
+        "privacy_link": "privacy policy",
+        "terms_end": "."
       }
     },
     "legal_pages": {
@@ -337,6 +372,33 @@
         "desc": "How Klemmenov handles personal data.",
         "h1": "Privacy"
       }
+    },
+    "book_status": {
+      "thanks_title": "Booking status | Klemmenov",
+      "thanks_desc": "Status of your booking.",
+      "cancelled_title": "Payment cancelled | Klemmenov",
+      "cancelled_desc": "The payment was cancelled.",
+      "h1": "Your booking",
+      "checking": "Checking your booking…",
+      "paid_h": "Booking confirmed",
+      "paid_note": "I will message you on WhatsApp or Telegram to confirm the details.",
+      "service": "Shoot",
+      "when": "Date and time",
+      "when_value": "{when} Dubai time",
+      "deposit_paid": "Deposit paid",
+      "remaining": "Remaining on the day",
+      "pending_h": "We are confirming your payment",
+      "pending_note": "This can take a minute. Keep this page open, it updates by itself. If nothing changes, write in WhatsApp.",
+      "pending_still": "Still confirming. If you were charged, write in WhatsApp and the booking will be checked.",
+      "expired_h": "This hold expired",
+      "expired_note": "The time was held for a short while and the payment did not arrive in time. You can choose a time again.",
+      "unknown_h": "Booking not found",
+      "unknown_note": "This link does not match a booking. If you paid, write in WhatsApp.",
+      "cancelled_h": "Payment cancelled",
+      "cancelled_note": "The payment was not completed. You can choose a time again or write in WhatsApp.",
+      "back": "Back to booking",
+      "wa": "Write in WhatsApp",
+      "noscript": "This page needs JavaScript to check your booking. If you paid, write in WhatsApp."
     }
   },
   "ru": {

@@ -13,6 +13,17 @@ e = html.escape
 TERMS = bool(C.get('terms_approved'))
 if TERMS and not (C.get('terms_text') and C.get('privacy_text')):
     raise SystemExit('content.json: terms_approved is true but terms_text / privacy_text is empty; fill both lists or set terms_approved to false')
+API = (C.get('booking_api') or '').strip()
+if API:   # live mode takes real payments: refuse to build anything unsafe
+    _u = urllib.parse.urlsplit(API)
+    _local = _u.scheme == 'http' and _u.hostname in ('localhost', '127.0.0.1', '::1')
+    if not ((_u.scheme == 'https' or _local) and _u.hostname and not _u.username and not _u.password
+            and not _u.query and not _u.fragment and '@' not in _u.netloc):
+        raise SystemExit(f'content.json: booking_api must be an https URL of the booking Worker (http only for localhost), got {API!r}')
+    if not TERMS:
+        raise SystemExit('content.json: booking_api is set but terms_approved is false; the site must not take payments without approved terms')
+    API = API.rstrip('/')
+BOOKING_CFG = json.load(open(os.path.join(ROOT, 'worker', 'booking-config.json'), encoding='utf8'))
 LANGS = ['en']   # add 'ru' back to rebuild the Russian version (strings are kept in i18n.json)
 
 class Ctx:  # per-page context
@@ -48,7 +59,7 @@ def strip(x, items):
 
 NAVP = ['', 'work/', 'prices/', 'reviews/', 'contact/']
 
-def head(x, title, desc, og='assets/og.jpg'):
+def head(x, title, desc, og='assets/og.jpg', noindex=False):
     L = x.L; url = f'{SITE}/{x.pfx}{x.path}'
     alts = (''.join(f'<link rel="alternate" hreflang="{l}" href="{SITE}/{"ru/" if l=="ru" else ""}{x.path}">' for l in LANGS) + f'<link rel="alternate" hreflang="x-default" href="{SITE}/{x.path}">') if len(LANGS) > 1 else ''
     ld = json.dumps({"@context": "https://schema.org", "@type": "Photographer", "name": L['name_full'], "alternateName": "Klemmenov",
@@ -64,7 +75,7 @@ def head(x, title, desc, og='assets/og.jpg'):
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{e(title)}</title>
 <meta name="description" content="{e(desc)}">
-<meta name="theme-color" content="#0c0a09">
+{'<meta name="robots" content="noindex">' + chr(10) if noindex else ''}<meta name="theme-color" content="#0c0a09">
 <link rel="canonical" href="{url}">
 {alts}
 <meta property="og:type" content="website"><meta property="og:site_name" content="Klemmenov"><meta property="og:locale" content="{"ru_RU" if x.lang=="ru" else "en_US"}">
@@ -235,8 +246,8 @@ def home(lang):
 '''
     w(lang, 'index.html', t + foot(x))
 
-def book(lang):  # request mode: the page only builds a WhatsApp message, nothing is charged
-    x = Ctx(lang, 'book/'); L = x.L; B = L['book_page']
+def book(lang):  # request mode (booking_api empty): WhatsApp message only. Live mode: calendar + deposit via the Worker
+    x = Ctx(lang, 'book/'); L = x.L; B = L['book_page']; LV = B['live']
     S, FA, QA = C['services'], C['fixed_addons'], C['quote_addons']
     def price_line(sv):
         if sv['type'] == 'hourly':
@@ -257,9 +268,33 @@ def book(lang):  # request mode: the page only builds a WhatsApp message, nothin
         f'<span class="opt-s">{e(txt)}</span></label>' for qid, txt in QA.items())
     cfg = html.escape(json.dumps({'wa': C['whatsapp'], 'greeting': L['wa_text'], 'quoteLabels': B['quote_labels'],
         'hour': B['hour'], 'hours': B['hours'], 'errors': B['errors'], 'perHour': B['per_hour'], 'currency': B['summary_currency'],
-        'hoursText': B['summary_hours'], 'total': B['summary_total'], 'empty': B['summary_empty'], 'quoteWord': B['summary_quote'], 'packageNote': B['package_note']}, ensure_ascii=False), quote=True)
+        'hoursText': B['summary_hours'], 'total': B['summary_total'], 'empty': B['summary_empty'], 'quoteWord': B['summary_quote'], 'packageNote': B['package_note'],
+        **({'api': API, 'horizonDays': BOOKING_CFG['horizonDays'], 'live': LV} if API else {})}, ensure_ascii=False), quote=True)
     st = B['steps']
-    t = head(x, B['title'], B['desc'])
+    if API:
+        step3 = f'''<h2 id="h-date"><span class="n">3</span>{LV['step_date']}</h2>
+<p class="small note" data-slots-status role="status">{LV['slots_pick_service']}</p>
+<button type="button" class="linkbtn" data-retry hidden>{LV['retry']}</button>
+<div class="days" role="group" aria-label="{LV['days_label']}" data-days></div>
+<button type="button" class="linkbtn" data-more hidden>{LV['more_days']}</button>
+<div class="times-box" data-times-box hidden>
+<p class="tz"><span id="times-l">{LV['times_label']}</span><span>{LV['tz']}</span></p>
+<p class="small note" data-tz-note hidden>{LV['tz_note']}</p>
+<div class="times" role="group" aria-labelledby="times-l" data-times></div>
+</div>
+<p class="small chosen" data-chosen aria-live="polite"></p>'''
+        action = f'''<div class="check"><input id="f-terms" name="terms" type="checkbox"><label for="f-terms">{LV['terms_before']}<a href="../terms/">{LV['terms_link']}</a>{LV['terms_after']}<a href="../privacy/">{LV['privacy_link']}</a>{LV['terms_end']}</label></div>
+<div class="pay-row"><button type="button" class="btn" data-pay aria-disabled="true" aria-describedby="pay-missing">{LV['pay_btn']}</button>
+<a class="btn btn-alt" data-request href="{wa(x, L['wa_book'])}" target="_blank" rel="noopener">{LV['fallback_btn']}</a></div>
+<p class="small note" id="pay-missing" data-pay-missing aria-live="polite"></p>
+<p class="err" data-pay-error role="alert" hidden></p>
+<p class="small note">{LV['pay_note']}</p>'''
+    else:
+        step3 = f'''<h2 id="h-date"><span class="n">3</span>{st[2]}</h2>
+<div class="field"><label for="f-date">{B['date_label']}</label><input id="f-date" name="date" type="text" autocomplete="off" placeholder="{e(B['date_ph'])}"><p class="small note">{B['date_hint']}</p></div>'''
+        action = f'''<a class="btn" data-request href="{wa(x, L['wa_book'])}" target="_blank" rel="noopener">{B['request_btn']}</a>
+<p class="small note">{B['request_note']}</p>'''
+    t = head(x, B['title'], LV['desc'] if API else B['desc'])
     t += f'''<section class="ch-black book">
 <div class="page-head"><h1 class="rv" {fitstyle(B['h1'])}>{B['h1']}</h1></div>
 <noscript><div class="wrap book-ns"><p class="lead">{B['noscript']}</p><a class="btn" href="{wa(x, L['wa_book'])}">{B['noscript_btn']}</a></div></noscript>
@@ -282,12 +317,11 @@ def book(lang):  # request mode: the page only builds a WhatsApp message, nothin
 <fieldset class="opts opts-q"><legend class="sr">{B['extras_quote_h']}</legend>{quote}</fieldset>
 </section>
 <section class="step" data-step="date" aria-labelledby="h-date">
-<h2 id="h-date"><span class="n">3</span>{st[2]}</h2>
-<div class="field"><label for="f-date">{B['date_label']}</label><input id="f-date" name="date" type="text" autocomplete="off" placeholder="{e(B['date_ph'])}"><p class="small note">{B['date_hint']}</p></div>
+{step3}
 </section>
 </div>
 <aside class="summary" aria-labelledby="h-sum">
-<h2 id="h-sum">{B['summary_h']}</h2>
+<h2 id="h-sum">{LV['summary_h'] if API else B['summary_h']}</h2>
 <div data-summary aria-live="polite" aria-atomic="true"></div>
 </aside>
 <section class="step book-contact" data-step="contact" aria-labelledby="h-contact">
@@ -295,8 +329,7 @@ def book(lang):  # request mode: the page only builds a WhatsApp message, nothin
 <div class="field"><label for="f-name">{B['name_label']}</label><input id="f-name" name="name" type="text" autocomplete="name"></div>
 <div class="field"><label for="f-reach">{B['reach_label']}</label><input id="f-reach" name="reach" type="text" autocomplete="tel" placeholder="{e(B['reach_ph'])}"></div>
 <div class="field"><label for="f-notes">{B['notes_label']}</label><textarea id="f-notes" name="notes" rows="3" placeholder="{e(B['notes_ph'])}"></textarea></div>
-<a class="btn" data-request href="{wa(x, L['wa_book'])}" target="_blank" rel="noopener">{B['request_btn']}</a>
-<p class="small note">{B['request_note']}</p>
+{action}
 </section>
 </form>
 </div>
@@ -307,6 +340,26 @@ def book(lang):  # request mode: the page only builds a WhatsApp message, nothin
           '<script type="module" src="../assets/book.mjs" onerror="bookFallback()"></script>\n')
     t += foot(x).replace('</body>', fb + '</body>')
     w(lang, 'book/index.html', t)
+
+def book_status(lang, kind):  # live mode only: Ziina success (thanks) and cancel pages, never indexed
+    x = Ctx(lang, f'book/{kind}/'); L = x.L; T = L['book_status']
+    t = head(x, T[f'{kind}_title'], T[f'{kind}_desc'], noindex=True)
+    links = f'<div class="status-links"><a class="btn" href="../">{T["back"]}</a><a class="btn btn-alt" href="{wa(x, L["wa_book"])}">{T["wa"]}</a></div>'
+    if kind == 'thanks':
+        cfg = html.escape(json.dumps({'api': API, 'text': T}, ensure_ascii=False), quote=True)
+        body = (f'<div class="wrap book-status" data-status="{cfg}">\n<noscript><p class="lead">{T["noscript"]}</p></noscript>\n'
+                f'<div data-status-box aria-live="polite"><p class="lead js-only">{T["checking"]}</p></div>\n{links}\n</div>')
+    else:
+        body = (f'<div class="wrap book-status">\n<div><h2 class="sub">{T["cancelled_h"]}</h2><p class="lead">{T["cancelled_note"]}</p></div>\n{links}\n</div>')
+    t += f'''<section class="ch-black book">
+<div class="page-head"><h1 class="rv" {fitstyle(T['h1'])}>{T['h1']}</h1></div>
+{body}
+</section>
+'''
+    f = foot(x)
+    if kind == 'thanks':
+        f = f.replace('</body>', '<script type="module" src="../../assets/book-status.mjs"></script>\n</body>')
+    w(lang, f'book/{kind}/index.html', t + f)
 
 # ---------------------------------------------------------------- GALLERIES
 CLS = {'personal': 'ch-black', 'events': 'ch-burgundy', 'commercial': 'ch-white'}
@@ -457,6 +510,9 @@ def seo():
 
 for lg in LANGS:
     home(lg); work(lg); [gallery(lg, k) for k in CLS]; prices(lg); reviews(lg); contact(lg); book(lg)
+    for k in ('thanks', 'cancelled'):
+        if API: book_status(lg, k)
+        else: shutil.rmtree(os.path.join(D, 'ru' if lg == 'ru' else '', 'book', k), ignore_errors=True)   # request mode: no stale live pages
 if TERMS:
     for lg in LANGS: legal(lg, 'terms'); legal(lg, 'privacy')
 else:   # gate closed: no stale legal pages

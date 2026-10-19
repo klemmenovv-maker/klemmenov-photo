@@ -376,3 +376,35 @@ footer .name { font-family: var(--serif); font-weight: 400; font-size: calc((100
 
 .book-nm { display: grid; gap: 24px; justify-items: start; padding-bottom: clamp(48px, 7vw, 110px); }
 .book-nm[hidden] { display: none; }
+
+/* ---------- book page (live mode: dates, deposit) and status pages ---------- */
+.days, .times { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 112px), 1fr)); gap: 8px; margin-top: 16px; }
+.times { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
+.day, .time { min-height: 48px; padding: 10px 12px; background: var(--tone); color: var(--fg); border: 0; border-radius: 0; font: 500 var(--fs-small)/1.2 var(--sans); font-variant-numeric: tabular-nums; cursor: pointer; transition: background .25s, color .25s; }
+.day:hover, .time:hover { background: #221c17; }
+.day[aria-pressed="true"], .time[aria-pressed="true"] { background: var(--acc); color: var(--acc-ink); }
+.day:focus-visible, .time:focus-visible, .linkbtn:focus-visible, .check input:focus-visible { outline: 3px solid var(--acc); outline-offset: 3px; }
+.linkbtn { margin-top: 16px; padding: 12px 0; background: none; border: 0; color: var(--fg); font: 500 var(--fs-body)/1 var(--sans); text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.linkbtn[aria-busy="true"] { opacity: .55; cursor: progress; }
+.times-box { margin-top: 28px; }
+.tz { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: var(--fs-small); font-weight: 500; }
+.tz span + span { opacity: .8; font-weight: 400; }
+.chosen { margin-top: 16px; }
+.check { display: flex; gap: 12px; align-items: flex-start; margin: 8px 0 24px; max-width: 560px; }
+.check input { flex: none; width: 22px; height: 22px; margin: 2px 0 0; accent-color: var(--acc); }
+.check a { color: inherit; text-underline-offset: 3px; }
+.pay-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn-alt { --acc: #221c17; --acc-ink: #efedea; }
+.book [data-pay][aria-disabled="true"] { opacity: .5; cursor: not-allowed; transform: none; filter: none; }
+.book [data-pay][aria-busy="true"] { cursor: progress; }
+.book-contact .err { margin-top: 16px; max-width: 48ch; }
+.sum-deposit { display: grid; gap: 4px; margin-top: 22px; padding-top: 18px; border-top: 1px solid rgba(239, 237, 234, .14); }
+.sum-due { font-weight: 500; }
+.book-status { display: grid; gap: 32px; justify-items: start; padding-bottom: clamp(60px, 8vw, 110px); }
+.status-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px 24px; margin: 24px 0; }
+.status-facts dt { font-size: var(--fs-small); opacity: .8; }
+.status-facts dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
+.status-links { display: flex; flex-wrap: wrap; gap: 12px; }
+.js-only { display: none; }
+.js .js-only { display: block; }
+@media (prefers-reduced-motion: reduce) { .day, .time { transition: none; } }

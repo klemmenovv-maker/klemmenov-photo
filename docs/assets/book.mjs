@@ -1,4 +1,5 @@
-// /book/ wiring (request mode). Markup is rendered by tools/build.py; this file only reads it and keeps the summary current.
+// /book/ wiring. Markup is rendered by tools/build.py; this file only reads it and keeps the summary current.
+// Request mode: WhatsApp message only. Live mode (data-book has `api`): book-live.mjs adds dates and the deposit payment.
 import { quote } from './pricing.mjs';
 import { buildWhatsAppText, formatAed, parseServiceParam, waUrl } from './book-ui.mjs';
 
@@ -37,7 +38,7 @@ async function init() {
     if (text !== undefined) n.textContent = text;
     return n;
   }
-  const field = (id) => document.getElementById(id).value;
+  const field = (id) => { const n = document.getElementById(id); return n ? n.value : ''; };
 
   function selectService(id) {
     state.serviceId = id;
@@ -80,12 +81,12 @@ async function init() {
     summary.innerHTML = '';
     last = null;
     request.href = waUrl(S.wa, S.greeting);
-    if (!state.serviceId) { summary.append(el('p', 'small', S.empty)); return; }
+    if (!state.serviceId) { summary.append(el('p', 'small', S.empty)); if (live) live.onRender(); return; }
 
     const addons = { ...state.addons };
     for (const id of state.quote) addons[id] = 1;
     const r = quote(config, { serviceId: state.serviceId, hours: svc().type === 'hourly' ? state.hours : undefined, addons });
-    if (!r.ok) { summary.append(el('p', 'err', S.errors[r.error] || S.errors.unknown_service)); return; }
+    if (!r.ok) { summary.append(el('p', 'err', S.errors[r.error] || S.errors.unknown_service)); if (live) live.onRender(); return; }
 
     const list = el('ul', 'sum-lines');
     r.lines.forEach((l, i) => {
@@ -105,18 +106,32 @@ async function init() {
     const total = el('p', 'sum-total');
     total.append(el('span', 'small', S.total), (() => { const n = el('strong', '', formatAed(r.total)); n.append(el('small', '', ` ${S.currency}`)); return n; })());
     summary.append(total);
+    if (live) summary.append(...live.summaryExtra(r));
 
     last = { r, addons };
     updateHref();
+    if (live) live.onRender();
   }
 
   // text fields only touch the link, never the aria-live summary
   function updateHref() {
     if (!last) return;
     const text = buildWhatsAppText(last.r, {
-      greeting: S.greeting, name: field('f-name'), reach: field('f-reach'), notes: field('f-notes'), preferredDate: field('f-date'),
+      greeting: S.greeting, name: field('f-name'), reach: field('f-reach'), notes: field('f-notes'), preferredDate: live ? live.preferredDate() : field('f-date'),
     }, last.addons, { quoteLabels: S.quoteLabels });
     request.href = waUrl(S.wa, text);
+  }
+
+  // live mode: loaded only when the build embedded an API base; on failure the WhatsApp request link keeps working
+  let live = null;
+  if (S.api) {
+    try {
+      const { initLive } = await import('./book-live.mjs');
+      live = initLive({ root, S, config, el, field, lock, getQuote: () => last, getSelection: () => (state.serviceId ? { serviceId: state.serviceId, hours: svc().type === 'hourly' ? state.hours : undefined } : null), refreshRequest: updateHref });
+    } catch {
+      const err = $('[data-pay-error]');
+      if (err) { err.textContent = S.errors.load; err.hidden = false; }
+    }
   }
 
   root.addEventListener('change', (ev) => {
