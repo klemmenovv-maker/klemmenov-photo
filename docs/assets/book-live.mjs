@@ -1,7 +1,6 @@
 // /book/ live mode: step 3 free times from the booking Worker, step 4 deposit payment.
 // Loaded by book.mjs only when the build embedded an API base (content.json booking_api).
 // Server and visitor text is only ever set with textContent. Nothing is stored in the browser.
-import { depositFor } from './pricing.mjs';
 import {
   formatAed, loadSlots, submitCheckout, friendlyError, payMissing,
   dayLabel, addDays, dubaiToday, slotWhen, tzDiffers,
@@ -11,7 +10,7 @@ const DEBOUNCE_MS = 350;
 const WINDOW_DAYS = 14;
 const net = (url, init) => fetch(url, init);
 
-export function initLive({ root, S, config, el, field, lock, getQuote, getSelection, refreshRequest }) {
+export function initLive({ root, S, el, field, lock, getQuote, getSelection, refreshRequest }) {
   const LV = S.live;
   const $ = (s) => root.querySelector(s);
   const status = $('[data-slots-status]');
@@ -208,7 +207,7 @@ export function initLive({ root, S, config, el, field, lock, getQuote, getSelect
   return {
     preferredDate: () => (st.start ? LV.date_pref.replace('{when}', slotWhen(st.start)) : ''),
     summaryExtra(r) {
-      const dep = depositFor(config, r.serviceId, r.total);
+      const dep = r.deposit; // quote() computes it with depositFor and the same config
       const box = el('div', 'sum-deposit');
       box.append(el('p', 'sum-due', LV.deposit.replace('{n}', formatAed(dep))), el('p', 'small', LV.remaining.replace('{n}', formatAed(r.total - dep))));
       return [box];

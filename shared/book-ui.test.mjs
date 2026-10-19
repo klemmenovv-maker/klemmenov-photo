@@ -287,3 +287,21 @@ test('date helpers', () => {
   assert.equal(tzDiffers(0), true);
   assert.equal(tzDiffers(-300), true);
 });
+
+test('friendlyError: holds, bad_range and field codes', () => {
+  for (const c of ['slot_taken', 'slot_unavailable']) assert.match(friendlyError(c), /15 minutes/, c);
+  assert.match(friendlyError('bad_range'), /reload the page/i);
+  assert.notEqual(friendlyError('bad_range'), friendlyError('unknown_thing'));
+  assert.match(friendlyError('invalid_name'), /name/i);
+  assert.match(friendlyError('invalid_contact'), /WhatsApp|Telegram/);
+  assert.match(friendlyError('invalid_notes'), /notes/i);
+});
+
+test('pollBooking counts request time toward the timeout (injected now)', async () => {
+  let t = 0;
+  const f = fakeFetch(async () => { t += 25000; return json(200, { ...BOOKING, status: 'held' }); });
+  const r = await pollBooking(API, ID, f, { intervalMs: 3000, timeoutMs: 60000, now: () => t, sleep: async (ms) => { t += ms; } });
+  assert.deepEqual(r, { status: 'pending' });
+  // 25 s fetch + 3 s sleep per round: fetches at t=0, 28 s, 56 s; next round would start after 60 s
+  assert.equal(f.calls.length, 3);
+});

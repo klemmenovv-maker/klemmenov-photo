@@ -326,9 +326,9 @@ def book(lang):  # request mode (booking_api empty): WhatsApp message only. Live
 </aside>
 <section class="step book-contact" data-step="contact" aria-labelledby="h-contact">
 <h2 id="h-contact"><span class="n">4</span>{st[3]}</h2>
-<div class="field"><label for="f-name">{B['name_label']}</label><input id="f-name" name="name" type="text" autocomplete="name"></div>
-<div class="field"><label for="f-reach">{B['reach_label']}</label><input id="f-reach" name="reach" type="text" autocomplete="tel" placeholder="{e(B['reach_ph'])}"></div>
-<div class="field"><label for="f-notes">{B['notes_label']}</label><textarea id="f-notes" name="notes" rows="3" placeholder="{e(B['notes_ph'])}"></textarea></div>
+<div class="field"><label for="f-name">{B['name_label']}</label><input id="f-name" name="name" type="text" autocomplete="name" maxlength="80"></div>
+<div class="field"><label for="f-reach">{B['reach_label']}</label><input id="f-reach" name="reach" type="text" autocomplete="tel" maxlength="120" placeholder="{e(B['reach_ph'])}"></div>
+<div class="field"><label for="f-notes">{B['notes_label']}</label><textarea id="f-notes" name="notes" rows="3" maxlength="1000" placeholder="{e(B['notes_ph'])}"></textarea></div>
 {action}
 </section>
 </form>
@@ -350,7 +350,7 @@ def book_status(lang, kind):  # live mode only: Ziina success (thanks) and cance
         body = (f'<div class="wrap book-status" data-status="{cfg}">\n<noscript><p class="lead">{T["noscript"]}</p></noscript>\n'
                 f'<div data-status-box aria-live="polite"><p class="lead js-only">{T["checking"]}</p></div>\n{links}\n</div>')
     else:
-        body = (f'<div class="wrap book-status">\n<div><h2 class="sub">{T["cancelled_h"]}</h2><p class="lead">{T["cancelled_note"]}</p></div>\n{links}\n</div>')
+        body = (f'<div class="wrap book-status">\n<div><h2 class="sub">{T["cancelled_h"]}</h2><p class="lead">{T["cancelled_note"].format(min=BOOKING_CFG["holdMinutes"])}</p></div>\n{links}\n</div>')
     t += f'''<section class="ch-black book">
 <div class="page-head"><h1 class="rv" {fitstyle(T['h1'])}>{T['h1']}</h1></div>
 {body}

@@ -144,7 +144,7 @@ export async function loadSlots(api, selection, range, fetchImpl) {
   return { timezone: body.timezone, durationMin: body.durationMin, days };
 }
 
-// Only https pages on ziina.com or its subdomains, no credentials, default port.
+// Only https pages on ziina.com or its subdomains (Ziina serves hosted checkout from a subdomain), no credentials, default port.
 export function isAllowedRedirect(url) {
   if (typeof url !== 'string' || !url) return false;
   let u;
@@ -174,24 +174,29 @@ const defaultSleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // {status:'unknown'} for a bad or unknown id, {status:'pending'} when timeoutMs passes.
 // Network errors and 5xx answers are retried until the timeout.
 export async function pollBooking(api, id, fetchImpl, opts = {}) {
-  const { intervalMs = 3000, timeoutMs = 60000, sleep = defaultSleep } = opts;
+  const { intervalMs = 3000, timeoutMs = 60000, sleep = defaultSleep, now = Date.now } = opts;
   if (!isUuid(id)) return { status: 'unknown' };
-  for (let waited = 0; ; waited += intervalMs) {
+  // elapsed = request time (measured with now) + the intervals slept; a fake sleep still ends the loop
+  for (let elapsed = 0; ; elapsed += intervalMs) {
+    const before = now();
     try {
       const b = await requestJson(fetchImpl, `${base(api)}/booking/${id}`);
       if (isObj(b) && FINAL.has(b.status)) return b;
     } catch (e) {
       if (e instanceof BookingApiError && e.status === 404) return { status: 'unknown' };
     }
-    if (waited + intervalMs > timeoutMs) return { status: 'pending' };
+    elapsed += Math.max(0, now() - before);
+    if (elapsed + intervalMs > timeoutMs) return { status: 'pending' };
     await sleep(intervalMs);
   }
 }
 
 const WA_HINT = ' You can also request the shoot in WhatsApp.';
 const MESSAGES = {
-  slot_taken: 'Someone has just taken this time. Please choose another time.',
-  slot_unavailable: 'This time is no longer free. Please choose another time.',
+  // an unfinished payment holds its slot for holdMinutes (worker/booking-config.json, 15)
+  slot_taken: 'This time is not free right now (an unfinished payment can hold it for up to 15 minutes). Please pick another time.',
+  slot_unavailable: 'This time is not free right now (an unfinished payment can hold it for up to 15 minutes). Please pick another time.',
+  bad_range: 'Those dates are not available. Please reload the page.',
   calendar_unavailable: 'Available times could not be loaded right now.' + WA_HINT,
   payment_unavailable: 'The payment page could not be opened. Nothing was charged.' + WA_HINT,
   rate_limited: 'Too many attempts in a short time. Please wait a minute and try again.',

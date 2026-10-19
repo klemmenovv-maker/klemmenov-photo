@@ -409,6 +409,9 @@ class LiveBookTests(unittest.TestCase):
             self.assertEqual(json.loads(h.unescape(m.group(1)))["api"], "https://booking.example.test")
             self.assertRegex(thanks, r'<script type="module" src="\.\./\.\./assets/book-status\.mjs"></script>')
             self.assertTrue(os.path.isfile(os.path.join(out, "assets", "book-status.mjs")))
+            self.assertIn("15 minutes", self._read(out, "book", "cancelled", "index.html"))
+            for fid, n in (("f-name", 80), ("f-reach", 120), ("f-notes", 1000)):
+                self.assertRegex(book, rf'id="{fid}"[^>]*maxlength="{n}"')
             sm = self._read(out, "sitemap.xml")
             self.assertNotIn("/book/thanks/", sm)
             self.assertNotIn("/book/cancelled/", sm)

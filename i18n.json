@@ -395,7 +395,7 @@
       "unknown_h": "Booking not found",
       "unknown_note": "This link does not match a booking. If you paid, write in WhatsApp.",
       "cancelled_h": "Payment cancelled",
-      "cancelled_note": "The payment was not completed. You can choose a time again or write in WhatsApp.",
+      "cancelled_note": "The payment was not completed. The time stays reserved for about {min} minutes, so choose another time or try again later. You can also write in WhatsApp.",
       "back": "Back to booking",
       "wa": "Write in WhatsApp",
       "noscript": "This page needs JavaScript to check your booking. If you paid, write in WhatsApp."

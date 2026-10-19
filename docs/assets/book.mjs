@@ -127,7 +127,7 @@ async function init() {
   if (S.api) {
     try {
       const { initLive } = await import('./book-live.mjs');
-      live = initLive({ root, S, config, el, field, lock, getQuote: () => last, getSelection: () => (state.serviceId ? { serviceId: state.serviceId, hours: svc().type === 'hourly' ? state.hours : undefined } : null), refreshRequest: updateHref });
+      live = initLive({ root, S, el, field, lock, getQuote: () => last, getSelection: () => (state.serviceId ? { serviceId: state.serviceId, hours: svc().type === 'hourly' ? state.hours : undefined } : null), refreshRequest: updateHref });
     } catch {
       const err = $('[data-pay-error]');
       if (err) { err.textContent = S.errors.load; err.hidden = false; }
