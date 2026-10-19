@@ -11,13 +11,12 @@ export function initSchedule({root,S,el,getQuote,getSelection,getDurationBounds,
   let month=today.slice(0,7), data=null, day=null, selected=null, key='',seq=0;
   const fmt=new Intl.DateTimeFormat('en',{month:'long',year:'numeric',timeZone:'Asia/Dubai'});
   const dateFmt=new Intl.DateTimeFormat('en',{weekday:'long',day:'numeric',month:'long',timeZone:'Asia/Dubai'});
-  const scope=()=>box.querySelector('[name="calendar-place"]:checked').value;
-  const free=s=>s.photographer&&(scope()==='other'||s.studio);
+  const free=s=>s.photographer;
   function clearSelection(){selected=null;chosen.textContent='';refreshRequest();}
   function choose(start){
     selected=start;
     const slot=data.days[day].find(s=>s.start===start);
-    chosen.textContent=`Selected: ${slotWhen(start)}–${slot.end.slice(11,16)} · ${data.durationMin/60} hours · ${scope()==='other'?'other location':'Project K'}. Request confirmation below.`;
+    chosen.textContent=`Selected: ${slotWhen(start)}–${slot.end.slice(11,16)} · ${data.durationMin/60} hours. Request confirmation below.`;
     renderTimes();refreshRequest();
   }
   function updateDuration(){
@@ -41,13 +40,13 @@ export function initSchedule({root,S,el,getQuote,getSelection,getDurationBounds,
       const tracks=el('div','timeline-scroll');
       const axis=el('div','timeline-axis');axis.append(el('span','track-label','Time'));
       for(let h=10;h<=20;h++)axis.append(el('span','',String(h).padStart(2,'0')+':00'));tracks.append(axis);
-      for(const [resource,label] of [['photographer','Photographer'],['studio','Project K']]){
+      for(const [resource,label] of [['photographer','Photographer']]){
         const row=el('div','timeline-track');row.append(el('span','track-label',label));
         for(const cell of timeline){
           const closed=resource==='photographer'&&cell.photographerClosed;
           const b=el('button',`timeline-cell ${closed?'is-closed':cell[resource]?'is-free':'is-busy'}`);b.type='button';
           b.title=`${cell.time}–${cell.end.slice(11,16)} · ${label} ${closed?'outside working hours':cell[resource]?'free':'booked'}`;b.setAttribute('aria-label',b.title);
-          if(selected&&(resource==='photographer'||scope()==='project-k')&&Date.parse(cell.start)>=Date.parse(selected)&&Date.parse(cell.start)<Date.parse(selected)+data.durationMin*60000)b.classList.add('is-session');
+          if(selected&&Date.parse(cell.start)>=Date.parse(selected)&&Date.parse(cell.start)<Date.parse(selected)+data.durationMin*60000)b.classList.add('is-session');
           const candidate=slots.find(s=>s.start===cell.start&&free(s));
           b.disabled=!candidate;
           b.addEventListener('click',()=>choose(candidate.start));row.append(b);
@@ -63,10 +62,9 @@ export function initSchedule({root,S,el,getQuote,getSelection,getDurationBounds,
     for(const s of slots){
       const b=el('button','resource-slot');b.type='button';b.disabled=!free(s);
       b.setAttribute('aria-pressed',String(selected===s.start));
-      b.setAttribute('aria-label',`${s.time}–${s.end.slice(11,16)}, photographer ${s.photographer?'free':'busy'}, Project K ${s.studio?'free':'busy'}`);
+      b.setAttribute('aria-label',`${s.time}–${s.end.slice(11,16)}, photographer ${s.photographer?'free':'busy'}`);
       b.append(el('strong','',`${s.time}–${s.end.slice(11,16)}`));
       b.append(el('span',s.photographer?'resource-free':'resource-busy',`Photographer · ${s.photographer?'free':'busy'}`));
-      b.append(el('span',s.studio?'resource-free':'resource-busy',`Project K · ${s.studio?'free':'busy'}`));
       b.addEventListener('click',()=>choose(s.start));
       (free(s)?list:blocked).append(b);
     }
@@ -100,7 +98,7 @@ export function initSchedule({root,S,el,getQuote,getSelection,getDurationBounds,
     const selection=getQuote()?getSelection():null;
     if(!selection){status.textContent='Choose a shoot to see available times.';return;}
     if(!S.scheduleApi){status.textContent='Online availability is being connected. Send your preferred date in WhatsApp for confirmation.';return;}
-    status.textContent='Checking photographer and studio availability…';
+    status.textContent='Checking available times…';
     const dates=monthDays(month);const from=dates[0]<today?today:dates[0];
     const horizon=dubaiToday(Date.now()+S.horizonDays*86400000);
     const to=dates.at(-1)>horizon?horizon:dates.at(-1);
@@ -120,6 +118,5 @@ export function initSchedule({root,S,el,getQuote,getSelection,getDurationBounds,
   box.querySelector('[data-month-prev]').addEventListener('click',()=>{const d=new Date(`${month}-01T00:00:00Z`);d.setUTCMonth(d.getUTCMonth()-1);month=d.toISOString().slice(0,7);load();});
   box.querySelector('[data-month-next]').addEventListener('click',()=>{const d=new Date(`${month}-01T00:00:00Z`);d.setUTCMonth(d.getUTCMonth()+1);month=d.toISOString().slice(0,7);load();});
   box.querySelector('[data-calendar-retry]').addEventListener('click',load);
-  box.querySelectorAll('[name="calendar-place"]').forEach(n=>n.addEventListener('change',()=>{clearSelection();render();}));
-  return {preferredDate:()=>selected?`${slotWhen(selected)} · ${scope()==='other'?'Other location (venue to be confirmed)':'Project K'}`:'',summaryExtra:()=>[],onRender(){updateDuration();const s=getQuote()?getSelection():null;const k=JSON.stringify(s);if(k!==key){key=k;load();}}};
+  return {preferredDate:()=>selected?`${slotWhen(selected)}–${data.days[day].find(s=>s.start===selected).end.slice(11,16)}`:'',summaryExtra:()=>[],onRender(){updateDuration();const s=getQuote()?getSelection():null;const k=JSON.stringify(s);if(k!==key){key=k;load();}}};
 }

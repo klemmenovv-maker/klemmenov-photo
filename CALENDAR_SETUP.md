@@ -58,3 +58,10 @@ Run `npm test`, `python3 -m unittest tests.test_site`, and
 `python3 tools/check_site.py`. New schedule tests cover OAuth refresh/redaction,
 pagination, resource separation, all-day bounds, failures, buffering and weekly hours.
 Preview snapshots and private credentials belong outside this public checkout.
+
+## Final owner decision: photographer only
+The public calendar now filters only photographer availability from 368. Studio-only
+Project K events do not block an appointment. The studio/location is discussed after
+the WhatsApp request. Location controls and the studio track are removed from the UI.
+The server still computes both resources for compatibility, but the public page uses
+only `photographer`. No automatic studio reservation is made.

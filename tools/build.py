@@ -306,10 +306,8 @@ def book(lang):  # request mode (booking_api empty): WhatsApp message only. Live
         step3 = '''<h2 id="h-date"><span class="n">3</span>Choose a date &amp; time</h2>
 <div class="booking-calendar" data-schedule>
 <p class="calendar-intro">Find a time for your shoot</p>
-<p class="small note">Project K requires both the photographer and the studio to be free. For another location, check the photographer’s availability.</p>
-<fieldset class="calendar-places"><legend class="sr">Shoot location</legend>
-<label><input type="radio" name="calendar-place" value="project-k" checked>Project K studio</label>
-<label><input type="radio" name="calendar-place" value="other">Another location</label></fieldset>
+<p class="small note">Choose a day, set your session length and pick a free time. We’ll discuss the studio or location after your request.</p>
+
 <div class="calendar-duration" data-duration-control>
 <div><span class="small note">Session length</span><strong data-duration-label>Choose a shoot</strong></div>
 <div class="duration-stepper"><button type="button" data-duration-less aria-label="Shorter session">−</button><output data-duration-value>2 hours</output><button type="button" data-duration-more aria-label="Longer session">+</button></div>
@@ -321,7 +319,7 @@ def book(lang):  # request mode (booking_api empty): WhatsApp message only. Live
 <p class="small note" data-calendar-status role="status">Choose a shoot to see available times.</p>
 <button type="button" class="linkbtn" data-calendar-retry>Refresh availability</button>
 <div data-resource-times></div><p class="chosen" data-calendar-chosen aria-live="polite"></p>
-<p class="small note">Selecting a time sends a request. It does not reserve the studio or confirm a booking.</p>
+<p class="small note">Selecting a time sends a request. I’ll confirm the shoot and discuss the location with you in WhatsApp.</p>
 </div>
 <div class="field"><label for="f-date">Preferred date (if unavailable online)</label><input id="f-date" name="date" type="text" autocomplete="off" placeholder="e.g. Sat 14 Nov, 18:00 to 21:00"></div>'''
     t = head(x, B['title'], LV['desc'] if API else B['desc'])
