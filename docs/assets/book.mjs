@@ -23,7 +23,6 @@ async function init() {
     summary.innerHTML = '';
     summary.append(el('p', 'err', S.errors.load));
     request.href = waUrl(S.wa, S.greeting);
-    request.removeAttribute('aria-disabled');
     return;
   }
 
@@ -80,7 +79,6 @@ async function init() {
     syncControls();
     summary.innerHTML = '';
     last = null;
-    request.setAttribute('aria-disabled', 'true');
     request.href = waUrl(S.wa, S.greeting);
     if (!state.serviceId) { summary.append(el('p', 'small', S.empty)); return; }
 
@@ -119,7 +117,6 @@ async function init() {
       greeting: S.greeting, name: field('f-name'), reach: field('f-reach'), notes: field('f-notes'), preferredDate: field('f-date'),
     }, last.addons, { quoteLabels: S.quoteLabels });
     request.href = waUrl(S.wa, text);
-    request.removeAttribute('aria-disabled');
   }
 
   root.addEventListener('change', (ev) => {
@@ -145,7 +142,6 @@ async function init() {
     }
     render();
   });
-  request.addEventListener('click', (ev) => { if (request.getAttribute('aria-disabled') === 'true') ev.preventDefault(); });
   root.querySelector('form').addEventListener('submit', (ev) => ev.preventDefault());
   render();
 }

@@ -352,7 +352,7 @@ footer .name { font-family: var(--serif); font-weight: 400; font-size: calc((100
 .xunit { font-size: var(--fs-small); opacity: .85; }
 .book .stepper { margin-bottom: 0; }
 .book .stepper button { width: 48px; height: 48px; background: #221c17; }
-.book .stepper button:disabled { opacity: .35; cursor: default; background: #221c17; color: var(--fg); }
+.book .stepper button[aria-disabled="true"], .book .stepper button[aria-disabled="true"]:hover { opacity: .35; cursor: default; background: #221c17; color: var(--fg); }
 .book .stepper output { min-width: 96px; text-align: center; padding: 0 8px; font-variant-numeric: tabular-nums; }
 .xrow .stepper output { min-width: 56px; }
 .field { display: grid; gap: 8px; margin-bottom: 20px; max-width: 560px; }
@@ -371,7 +371,6 @@ footer .name { font-family: var(--serif); font-weight: 400; font-size: calc((100
 .sum-total small { font: 400 var(--fs-lead)/1 var(--serif); letter-spacing: 0; }
 .sum-total strong { font: 400 var(--fs-num)/1 var(--serif); letter-spacing: -.03em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .err { color: #f0b4a8; }
-.book-contact .btn[aria-disabled="true"] { opacity: .45; pointer-events: none; }
 .book-contact .note { margin-top: 16px; max-width: 48ch; opacity: .85; }
 @media (prefers-reduced-motion: reduce) { .opt, .btn { transition: none; } .btn:hover { transform: none; } }
 

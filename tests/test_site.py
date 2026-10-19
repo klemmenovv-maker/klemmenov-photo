@@ -182,6 +182,13 @@ class SiteTests(unittest.TestCase):
         self.assertIn("wa.me", html)
 
 
+    def test_book_stepper_aria_disabled_style(self):
+        css = open(os.path.join(ROOT, "docs", "assets", "style.css"), encoding="utf-8").read()
+        self.assertIn('.book .stepper button[aria-disabled="true"]', css)
+        self.assertNotIn('stepper button:disabled', css)
+        js = open(os.path.join(ROOT, "docs", "assets", "book.mjs"), encoding="utf-8").read()
+        self.assertNotIn("request.setAttribute('aria-disabled'", js)
+
     def test_book_page_request_mode(self):
         import json, re
         with open(os.path.join(ROOT, "docs", "book", "index.html"), encoding="utf-8") as f:
