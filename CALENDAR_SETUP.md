@@ -16,11 +16,11 @@ confirmation. All-day ends are exclusive and use Dubai time.
 
 The interface shows only free start times by default. A disclosure shows why other
 intervals cannot be selected. Other-location requests need only photographer availability;
-Project K needs both resources. The chosen start and location are included in WhatsApp.
+Project K needs both resources. The duration can also be changed beside the calendar. Two day tracks show photographer and studio occupancy, including fully booked/closed days. A selected session is highlighted for its full duration. The chosen start and location are included in WhatsApp.
 A selection does not reserve a studio or create a calendar event.
 
 Owner-confirmed hours: 10:00–21:00; Wednesday 10:00–18:00; Friday closed.
-Notice: 48 hours. Buffer remains the existing 30 minutes, not yet confirmed by owner.
+Notice: 48 hours. Buffer is zero: sessions can be adjacent, as requested by the owner.
 Dates use Asia/Dubai. Duration comes from the service quote.
 
 ## Google connection

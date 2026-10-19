@@ -12,5 +12,11 @@ export function validateSchedule(data) {
       if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(slot.time) || slot.start !== `${day}T${slot.time}:00+04:00` || !Number.isFinite(Date.parse(slot.end)) || Date.parse(slot.end)-Date.parse(slot.start)!==data.durationMin*60000 || !['photographer','studio','available'].every(k=>typeof slot[k]==='boolean') || slot.available !== (slot.photographer&&slot.studio)) throw Error('Invalid slot');
     }
   }
+  if(data.timeline){
+    for(const [day,cells] of Object.entries(data.timeline)){
+      if(!data.days[day]||!Array.isArray(cells)) throw Error('Invalid timeline');
+      for(const cell of cells) if(cell.start!==`${day}T${cell.time}:00+04:00`||Date.parse(cell.end)-Date.parse(cell.start)!==30*60000||typeof cell.photographer!=='boolean'||typeof cell.studio!=='boolean')throw Error('Invalid timeline cell');
+    }
+  }
   return data;
 }

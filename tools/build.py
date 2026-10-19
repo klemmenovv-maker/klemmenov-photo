@@ -307,6 +307,11 @@ def book(lang):  # request mode (booking_api empty): WhatsApp message only. Live
 <fieldset class="calendar-places"><legend class="sr">Shoot location</legend>
 <label><input type="radio" name="calendar-place" value="project-k" checked>Project K studio</label>
 <label><input type="radio" name="calendar-place" value="other">Another location</label></fieldset>
+<div class="calendar-duration" data-duration-control>
+<div><span class="small note">Session length</span><strong data-duration-label>Choose a shoot</strong></div>
+<div class="duration-stepper"><button type="button" data-duration-less aria-label="Shorter session">−</button><output data-duration-value>2 hours</output><button type="button" data-duration-more aria-label="Longer session">+</button></div>
+</div>
+<p class="small note calendar-rules">10:00–21:00 · Wed until 18:00 · Fri closed · Book 48 hours ahead</p>
 <div class="calendar-toolbar"><button type="button" data-month-prev aria-label="Previous month">←</button><h3 data-month-title></h3><button type="button" data-month-next aria-label="Next month">→</button></div>
 <div class="calendar-weekdays" aria-hidden="true"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
 <div class="calendar-grid" data-calendar-grid role="group" aria-label="Choose a date"></div>

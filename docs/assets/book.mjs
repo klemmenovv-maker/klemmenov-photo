@@ -136,7 +136,7 @@ async function init() {
 
   if (!S.api) {
     const { initSchedule } = await import('./book-schedule.mjs');
-    live = initSchedule({root,S,el,getQuote:()=>last,getSelection:()=>({serviceId:state.serviceId,hours:svc()?.type==='hourly'?state.hours:undefined}),refreshRequest:updateHref});
+    live = initSchedule({root,S,el,getQuote:()=>last,getSelection:()=>({serviceId:state.serviceId,hours:svc()?.type==='hourly'?state.hours:undefined}),getDurationBounds:()=>svc()?.type==='hourly'?{min:svc().min,max:config.max_hours,hours:state.hours}:null,setHours:(hours)=>{state.hours=hours;render();},refreshRequest:updateHref});
   }
 
   root.addEventListener('change', (ev) => {

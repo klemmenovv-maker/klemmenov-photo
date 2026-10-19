@@ -36,5 +36,18 @@ export async function schedule(c) {
     const d=s.slice(0,10); if(!days[d]) continue;
     days[d].push({start:s,end:dubaiIso(Date.parse(s)+durationMin*60000),time:s.slice(11,16),photographer:photographer.has(s),studio:studio.has(s),available:photographer.has(s)&&studio.has(s)});
   }
-  return reply(200,{timezone:'Asia/Dubai',durationMin,days,updatedAt:now.toISOString(),confirmation:'request',bufferMin:cfg.bufferMin});
+  const timeline = {};
+  const overlaps=(ranges,start,end)=>ranges.some(r=>start<Date.parse(r.end)&&end>Date.parse(r.start));
+  for(let ms=start;ms<end;ms+=DAY){
+    const day=dubaiDay(ms);timeline[day]=[];
+    for(let minute=10*60;minute<21*60;minute+=30){
+      const s=ms+minute*60000,e=s+30*60000;
+      const weekday=new Date(ms+4*3600000).getUTCDay();
+      const hours=Object.hasOwn(cfg.workHours.byWeekday||{},weekday)?cfg.workHours.byWeekday[weekday]:cfg.workHours;
+      const clock=v=>Number(v.slice(0,2))*60+Number(v.slice(3));
+      const photographerClosed=!hours||minute<clock(hours.from)||minute+30>clock(hours.to);
+      timeline[day].push({start:dubaiIso(s),end:dubaiIso(e),time:dubaiIso(s).slice(11,16),photographerClosed,photographer:!photographerClosed&&!overlaps([...busy.photographer,...held],s,e),studio:!overlaps([...busy.studio,...held],s,e)});
+    }
+  }
+  return reply(200,{timeline,timezone:'Asia/Dubai',durationMin,days,updatedAt:now.toISOString(),confirmation:'request',bufferMin:cfg.bufferMin});
 }

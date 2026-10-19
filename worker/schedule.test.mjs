@@ -52,3 +52,13 @@ test('owner work hours: Wednesday ends at 18, Friday closed, notice 48 hours',()
  assert.ok(!slots.some(s=>s.startsWith('2026-10-20')));
  assert.ok(slots.includes('2026-10-22T20:00:00+04:00'));
 });
+
+test('no buffer allows sessions adjacent to a studio booking; timeline still shows booked cells',async()=>{
+ const c=ctx();c.deps.config.bufferMin=0;
+ const r=await schedule(c);const d=validateSchedule(r.body);const slots=d.days['2026-10-21'];
+ assert.equal(slots.find(s=>s.time==='10:00').available,true);
+ assert.equal(slots.find(s=>s.time==='11:00').studio,false);
+ assert.equal(slots.find(s=>s.time==='12:00').available,true);
+ assert.equal(d.timeline['2026-10-21'].find(s=>s.time==='11:30').studio,false);
+ assert.equal(d.timeline['2026-10-21'].find(s=>s.time==='12:00').studio,true);
+});
