@@ -144,3 +144,89 @@ test('registerWebhookBody', () => {
   assert.deepEqual(registerWebhookBody('https://w.example.com/hook'), { url: 'https://w.example.com/hook' });
   assert.deepEqual(registerWebhookBody('https://w.example.com/hook', 's3'), { url: 'https://w.example.com/hook', secret: 's3' });
 });
+
+// ---- fix round 1 ----
+test('URL check: tricky hosts and credentials rejected, good URLs accepted', async () => {
+  for (const u of [
+    'http://localhost.evil.com',
+    'http://localhost@evil.com',
+    'http://evil.com@localhost',
+    'https://user:pw@example.com/x',
+  ]) {
+    const f = fakeFetch(200, {});
+    await assert.rejects(createIntent(env, { ...base, successUrl: u }, f), RangeError, u);
+    await assert.rejects(createIntent(env, { ...base, failureUrl: u }, f), RangeError, u);
+    assert.equal(f.calls.length, 0);
+  }
+  for (const u of ['http://localhost:8787/ok', 'https://klemmenovv-maker.github.io/klemmenov-photo/book/thanks/?id=1']) {
+    const f = fakeFetch(200, { id: 'a', redirect_url: 'https://r' });
+    await createIntent(env, { ...base, successUrl: u }, f);
+    assert.equal(f.calls.length, 1);
+  }
+});
+
+test('missing/empty ZIINA_TOKEN throws ZiinaError(0) and never fetches', async () => {
+  for (const e of [{}, { ZIINA_TOKEN: '' }, undefined]) {
+    const f = fakeFetch(200, {});
+    await assert.rejects(createIntent(e, base, f), (x) => x instanceof ZiinaError && x.status === 0);
+    await assert.rejects(getIntent(e, 'a', f), (x) => x instanceof ZiinaError && x.status === 0);
+    assert.equal(f.calls.length, 0);
+  }
+});
+
+test('token never appears in message or body on any failure path', async () => {
+  const T = env.ZIINA_TOKEN;
+  const echo = `Bearer ${T} ${T}`;
+  const cases = [
+    fakeFetch(401, echo),
+    fakeFetch(500, { error: echo }),
+    async () => { throw new TypeError(echo); },
+    fakeFetch(200, echo),
+    fakeFetch(200, { id: 'a', note: echo }),
+    fakeFetch(200, { note: echo }),
+  ];
+  for (const f of cases) {
+    await assert.rejects(createIntent(env, base, f), (e) => {
+      assert.ok(e instanceof ZiinaError);
+      assert.ok(!e.message.includes(T), 'message leaks token');
+      assert.ok(!e.body.includes(T), 'body leaks token');
+      return true;
+    });
+  }
+  const f = fakeFetch(401, echo);
+  await assert.rejects(getIntent(env, 'a', f), (e) => !e.body.includes(T) && e.body.includes('[redacted]'));
+});
+
+test('Accept header is sent', async () => {
+  const f = fakeFetch(200, { id: 'a', redirect_url: 'https://r' });
+  await createIntent(env, base, f);
+  assert.equal(f.calls[0].init.headers.Accept, 'application/json');
+});
+
+test('huge numbers rejected before network', async () => {
+  for (const patch of [
+    { amountAed: 1e300 },
+    { amountAed: Number.MAX_SAFE_INTEGER },
+    { expiryMs: 1e21 },
+    { expiryMs: Number.MAX_SAFE_INTEGER + 2 },
+  ]) {
+    const f = fakeFetch(200, {});
+    await assert.rejects(createIntent(env, { ...base, ...patch }, f), RangeError);
+    assert.equal(f.calls.length, 0);
+  }
+});
+
+test('message truncation does not split a surrogate pair', async () => {
+  const f = fakeFetch(200, { id: 'a', redirect_url: 'https://r' });
+  await createIntent(env, { ...base, message: 'x'.repeat(199) + '😀yyy' }, f);
+  const m = JSON.parse(f.calls[0].init.body).message;
+  assert.ok(m.isWellFormed());
+  assert.equal(Array.from(m).length, 200);
+  assert.ok(m.endsWith('😀'));
+});
+
+test('getIntent omits test when absent', async () => {
+  const f = fakeFetch(200, { id: 'a', status: 'pending', amount: 1, currency_code: 'AED' });
+  const r = await getIntent(env, 'a', f);
+  assert.ok(!('test' in r));
+});
