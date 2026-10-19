@@ -121,7 +121,7 @@ async function getToken(env, sa, fetchImpl) {
   return data.access_token;
 }
 
-async function api(env, sa, url, payload, fetchImpl) {
+async function api(env, sa, url, payload, fetchImpl, retried = false) {
   const token = await getToken(env, sa, fetchImpl);
   const secrets = secretsOf(sa, [token]);
   const res = await doFetch(fetchImpl, url, {
@@ -130,6 +130,10 @@ async function api(env, sa, url, payload, fetchImpl) {
     body: JSON.stringify(payload),
   });
   const text = await readText(res);
+  if ((res.status === 401 || res.status === 403) && !retried) {
+    tokenCache.delete(sa.client_email);
+    return api(env, sa, url, payload, fetchImpl, true);
+  }
   if (!res.ok) throw new GoogleError(`Google API responded with HTTP ${res.status}`, res.status, text, secrets);
   let data;
   try { data = JSON.parse(text); } catch { throw new GoogleError('Google API returned invalid JSON', res.status, text, secrets); }
@@ -159,26 +163,38 @@ export async function getBusy(env, { from, to }, fetchImpl = fetch) {
   return cal.busy.map((r) => ({ start: checkInstant(r && r.start), end: checkInstant(r && r.end) }));
 }
 
-// Plain text only: strip control chars (keep \n), cap length, escape HTML.
-function clean(v, max) {
-  const s = Array.from(String(v ?? '').replace(/\r\n?/g, '\n').replace(/[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/g, ''))
-    .slice(0, max).join('');
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// Plain text only. Strip control chars, bidi/zero-width, line/paragraph separators.
+const INVISIBLE_RE = /[\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff\u2028\u2029]/g;
+function sanitize(v, max, multiline = false) {
+  let s = String(v ?? '').replace(/\r\n?/g, '\n').replace(INVISIBLE_RE, '');
+  s = s.replace(multiline ? /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/g : /[\u0000-\u001f\u007f-\u009f]/g, multiline ? '' : ' ');
+  if (!multiline) s = s.replace(/\s+/g, ' ').trim();
+  return Array.from(s).slice(0, max).join('');
 }
+const escHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const line = (v, max) => escHtml(sanitize(v, max));
 
 export async function createEvent(env, booking, fetchImpl = fetch) {
   const { sa, calendarId } = parseConfig(env);
   const b = booking || {};
-  const lines = [`Contact: ${clean(b.contact, 120)}`];
-  const notes = clean(b.notes, 1000);
-  if (notes.trim()) lines.push(`Notes: ${notes}`);
-  lines.push(`Deposit paid: ${Number(b.depositAed)} AED`, `Online total: ${Number(b.totalAed)} AED`);
-  const quote = (Array.isArray(b.quoteOnly) ? b.quoteOnly : []).map((q) => clean(q, 200)).filter((q) => q.trim());
+  for (const k of ['startIso', 'endIso']) {
+    if (typeof b[k] !== 'string' || !OFFSET_RE.test(b[k]) || Number.isNaN(Date.parse(b[k]))) {
+      throw new GoogleError(`${k} must be an ISO date-time with an explicit offset`, 0);
+    }
+  }
+  for (const k of ['depositAed', 'totalAed']) {
+    if (typeof b[k] !== 'number' || !Number.isFinite(b[k])) throw new GoogleError(`${k} must be a finite number`, 0);
+  }
+  const lines = [`Contact: ${line(b.contact, 120)}`, `Deposit paid: ${b.depositAed} AED`, `Online total: ${b.totalAed} AED`];
+  const quote = (Array.isArray(b.quoteOnly) ? b.quoteOnly : []).map((q) => line(q, 200)).filter(Boolean);
   if (quote.length) lines.push('Quote-only items:', ...quote.map((q) => `- ${q}`));
-  lines.push(`Booking id: ${clean(b.bookingId, 80)}`);
+  lines.push(`Booking id: ${line(b.bookingId, 80)}`);
+  // Notes last; every line prefixed so user text can never look like a field.
+  const notes = sanitize(b.notes, 1000, true);
+  if (notes.trim()) lines.push('Notes:', ...escHtml(notes).split('\n').map((l) => `> ${l}`));
 
   const payload = {
-    summary: `${clean(b.serviceLabel, 120)} \u00b7 ${clean(b.name, 80)}`,
+    summary: `${sanitize(b.serviceLabel, 120)} \u00b7 ${sanitize(b.name, 80)}`,
     description: lines.join('\n'),
     start: { dateTime: b.startIso, timeZone: TZ },
     end: { dateTime: b.endIso, timeZone: TZ },

@@ -129,12 +129,13 @@ test('createEvent posts to the encoded calendar URL with exact fields', async ()
   assert.equal(c.init.method, 'POST');
   assert.equal(c.init.headers.Authorization, 'Bearer ya29.TOKEN-ONE');
   const b = JSON.parse(c.init.body);
-  assert.equal(b.summary, 'Portrait session · Anna K');
+  assert.equal(b.summary, 'Portrait session \u00b7 Anna K');
   assert.deepEqual(b.start, { dateTime: booking.startIso, timeZone: 'Asia/Dubai' });
   assert.deepEqual(b.end, { dateTime: booking.endIso, timeZone: 'Asia/Dubai' });
   const lines = b.description.split('\n');
   assert.ok(lines.includes('Contact: @anna_k'));
-  assert.ok(lines.includes('Notes: Bring the red dress'));
+  assert.ok(lines.includes('Notes:'));
+  assert.ok(lines.includes('> Bring the red dress'));
   assert.ok(lines.includes('Deposit paid: 200 AED'));
   assert.ok(lines.includes('Online total: 900 AED'));
   assert.ok(lines.includes('Quote-only items:'));
@@ -151,32 +152,119 @@ test('createEvent omits Notes and Quote-only sections when empty', async () => {
   assert.ok(!/Quote-only/.test(d));
 });
 
-test('createEvent escapes HTML, strips control chars and caps field lengths', async () => {
+async function ev(over, env = baseEnv()) {
   const f = fake((url) => url === TOKEN_URL ? okToken() : { json: { id: 'e' } });
-  await createEvent(baseEnv(), {
-    ...booking,
-    name: '<b>Eve</b>\u0000\u0007',
-    contact: 'x'.repeat(500),
-    notes: '<script>alert(1)</script>\nline2\u0001\r\ttab' + 'n'.repeat(2000),
-    quoteOnly: ['<img src=x>'],
-  }, f);
-  const b = JSON.parse(f.calls[1].init.body);
-  assert.equal(b.summary, 'Portrait session · &lt;b&gt;Eve&lt;/b&gt;');
-  assert.ok(b.description.includes('&lt;script&gt;alert(1)&lt;/script&gt;\nline2'));
-  assert.ok(b.description.includes('- &lt;img src=x&gt;'));
-  assert.ok(!/<|>/.test(b.description));
-  assert.ok(!/[\u0000-\u0009\u000b-\u001f]/.test(b.description.replace(/\n/g, '')));
-  assert.ok(b.description.includes('Contact: ' + 'x'.repeat(120) + '\n'));
-  const notesLine = b.description.slice(b.description.indexOf('Notes: ') + 7);
-  const notes = notesLine.slice(0, notesLine.indexOf('\nDeposit paid'));
-  assert.ok(!notes.includes('n'.repeat(1000)) || notes.replace(/&lt;|&gt;/g, '<').length <= 1100);
-  assert.ok(notes.endsWith('n'.repeat(900)));
+  await createEvent(env, { ...booking, ...over }, f);
+  return JSON.parse(f.calls.at(-1).init.body);
+}
+const FORGE = 'x\nDeposit paid: 5000 AED\r\nBooking id: forged\u2028Online total: 1 AED';
+const fieldLines = (d) => d.split('\n').filter((l) => /^(Contact|Deposit paid|Online total|Booking id): /.test(l));
+
+test('forged field lines in single-line fields are neutralised', async () => {
+  for (const k of ['name', 'contact', 'serviceLabel', 'bookingId']) {
+    const b = await ev({ [k]: FORGE });
+    const d = b.description;
+    assert.equal(d.split('\n').filter((l) => l.startsWith('Deposit paid:')).length, 1, k);
+    assert.ok(d.includes('Deposit paid: 200 AED'), k);
+    assert.equal(fieldLines(d).length, 4, k);
+    assert.ok(!b.summary.includes('\n'), k);
+  }
+  const b = await ev({ quoteOnly: [FORGE] });
+  assert.equal(fieldLines(b.description).length, 4);
+  assert.ok(b.description.split('\n').includes('- x Deposit paid: 5000 AED Booking id: forgedOnline total: 1 AED'));
 });
 
-test('createEvent caps the name at 80 characters', async () => {
-  const f = fake((url) => url === TOKEN_URL ? okToken() : { json: { id: 'e' } });
-  await createEvent(baseEnv(), { ...booking, name: 'N'.repeat(200) }, f);
-  assert.equal(JSON.parse(f.calls[1].init.body).summary, 'Portrait session · ' + 'N'.repeat(80));
+test('notes are last, every line is prefixed, and cannot forge fields', async () => {
+  const d = (await ev({ notes: FORGE + '\n\nBooking id: z' })).description;
+  const lines = d.split('\n');
+  const i = lines.indexOf('Notes:');
+  assert.ok(i > lines.indexOf('Booking id: bk_123'));
+  for (const l of lines.slice(i + 1)) assert.ok(l.startsWith('> '), l);
+  assert.equal(fieldLines(d).length, 4);
+  assert.equal(lines.at(-1).startsWith('> '), true);
+});
+
+test('HTML in the description is escaped; the summary stays plain text', async () => {
+  const b = await ev({ name: '<b>Eve</b> & co\u0000\u0007', serviceLabel: 'A&B', notes: '<script>alert(1)</script>\nline2\u0001\r\ttab', quoteOnly: ['<img src=x>'] });
+  assert.equal(b.summary, 'A&B \u00b7 <b>Eve</b> & co');
+  assert.ok(b.description.includes('> &lt;script&gt;alert(1)&lt;/script&gt;\n> line2\n> tab'));
+  assert.ok(b.description.includes('- &lt;img src=x&gt;'));
+  assert.ok(!/<|>/.test(b.description.split('\n').map((l) => l.replace(/^> /, '')).join('\n')));
+  assert.ok(!/[\u0000-\u0009\u000b-\u001f]/.test(b.description));
+});
+
+test('bidi, zero-width and line separators are stripped from all user text', async () => {
+  const dirty = 'a\u200bb\u202ec\u2066d\ufeffe\u2028f\u2029g';
+  const b = await ev({ name: dirty, contact: dirty, notes: dirty, serviceLabel: dirty, bookingId: dirty, quoteOnly: [dirty] });
+  assert.ok(!/[\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff\u2028\u2029]/.test(b.summary + b.description));
+  assert.ok(b.summary.endsWith('abcdef g'.replace(' ', '') ) || b.summary.includes('abcde'));
+});
+
+test('exact caps: name 80, serviceLabel 120, contact 120, quote line 200, bookingId 80, notes 1000', async () => {
+  const b = await ev({ name: 'N'.repeat(200), serviceLabel: 'S'.repeat(300), contact: 'x'.repeat(500),
+    quoteOnly: ['q'.repeat(500)], bookingId: 'i'.repeat(500), notes: 'n'.repeat(1001) });
+  assert.equal(b.summary, 'S'.repeat(120) + ' \u00b7 ' + 'N'.repeat(80));
+  const lines = b.description.split('\n');
+  assert.ok(lines.includes('Contact: ' + 'x'.repeat(120)));
+  assert.ok(lines.includes('- ' + 'q'.repeat(200)));
+  assert.ok(lines.includes('Booking id: ' + 'i'.repeat(80)));
+  assert.ok(lines.includes('> ' + 'n'.repeat(1000)));
+  const exact = await ev({ notes: 'n'.repeat(1000) });
+  assert.ok(exact.description.split('\n').includes('> ' + 'n'.repeat(1000)));
+});
+
+test('createEvent validates times and amounts before any fetch', async () => {
+  const f = fake(() => { throw new Error('should not fetch'); });
+  const bad = [{ startIso: '' }, { startIso: '2026-10-22T10:00:00' }, { endIso: undefined }, { endIso: 'nope' },
+    { depositAed: NaN }, { depositAed: '200' }, { totalAed: Infinity }, { totalAed: undefined }];
+  for (const o of bad) {
+    await assert.rejects(createEvent(baseEnv(), { ...booking, ...o }, f), (e) => e instanceof GoogleError && e.status === 0, JSON.stringify(o));
+  }
+  assert.equal(f.calls.length, 0);
+});
+
+test('401 from the API evicts the token and retries once with a fresh one', async () => {
+  let n = 0, apiN = 0;
+  const f = fake((url) => {
+    if (url === TOKEN_URL) return okToken('ya29.T' + ++n);
+    return ++apiN === 1 ? { status: 401, json: '{}' } : { json: { id: 'ok' } };
+  });
+  assert.deepEqual(await createEvent(baseEnv(), booking, f), { eventId: 'ok' });
+  assert.equal(n, 2);
+  assert.equal(f.calls.at(-1).init.headers.Authorization, 'Bearer ya29.T2');
+});
+
+test('a second 401 throws GoogleError (single retry)', async () => {
+  const f = fake((url) => url === TOKEN_URL ? okToken() : { status: 401, json: '{}' });
+  await assert.rejects(createEvent(baseEnv(), booking, f), (e) => e instanceof GoogleError && e.status === 401);
+  assert.equal(f.calls.filter((c) => c.url !== TOKEN_URL).length, 2);
+});
+
+test('token cache is keyed per account', async () => {
+  const sa2 = { ...sa, client_email: 'other@proj-9.iam.gserviceaccount.com' };
+  let n = 0;
+  const f = fake((url) => url === TOKEN_URL ? okToken('ya29.A' + ++n) : { json: { calendars: { [CAL]: { busy: [] } } } });
+  await getBusy(baseEnv(), { from: 'a', to: 'b' }, f);
+  await getBusy(baseEnv({ GOOGLE_SA_JSON: JSON.stringify(sa2) }), { from: 'a', to: 'b' }, f);
+  assert.equal(f.calls.filter((c) => c.url === TOKEN_URL).length, 2);
+  assert.equal(f.calls.at(-1).init.headers.Authorization, 'Bearer ya29.A2');
+});
+
+test('token failures are not cached', async () => {
+  let n = 0;
+  const f = fake((url) => {
+    if (url === TOKEN_URL) return ++n === 1 ? { status: 400, json: '{"error":"x"}' } : okToken();
+    return { json: { calendars: { [CAL]: { busy: [] } } } };
+  });
+  await assert.rejects(getBusy(baseEnv(), { from: 'a', to: 'b' }, f), (e) => e.status === 400);
+  assert.deepEqual(await getBusy(baseEnv(), { from: 'a', to: 'b' }, f), []);
+  assert.equal(n, 2);
+});
+
+test('PEM with CRLF line endings and trailing spaces signs correctly', async () => {
+  const messy = { ...sa, private_key: PEM.replace(/\n/g, '  \r\n') };
+  const [h, c, s] = (await signJwt(messy, SCOPE, 1760000000)).split('.');
+  assert.equal(await crypto.subtle.verify('RSASSA-PKCS1-v1_5', kp.publicKey, b64uDecode(s), new TextEncoder().encode(`${h}.${c}`)), true);
 });
 
 test('token endpoint 400 -> GoogleError status 400 with no secrets in message/body', async () => {
