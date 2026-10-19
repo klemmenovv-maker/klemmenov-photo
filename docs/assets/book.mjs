@@ -117,7 +117,7 @@ async function init() {
   function updateHref() {
     if (!last) return;
     const text = buildWhatsAppText(last.r, {
-      greeting: S.greeting, name: field('f-name'), reach: field('f-reach'), notes: field('f-notes'), preferredDate: live ? live.preferredDate() : field('f-date'),
+      greeting: S.greeting, name: field('f-name'), reach: field('f-reach'), notes: field('f-notes'), preferredDate: (live && live.preferredDate()) || field('f-date'),
     }, last.addons, { quoteLabels: S.quoteLabels });
     request.href = waUrl(S.wa, text);
   }
@@ -132,6 +132,11 @@ async function init() {
       const err = $('[data-pay-error]');
       if (err) { err.textContent = S.errors.load; err.hidden = false; }
     }
+  }
+
+  if (!S.api) {
+    const { initSchedule } = await import('./book-schedule.mjs');
+    live = initSchedule({root,S,el,getQuote:()=>last,getSelection:()=>({serviceId:state.serviceId,hours:svc()?.type==='hourly'?state.hours:undefined}),refreshRequest:updateHref});
   }
 
   root.addEventListener('change', (ev) => {

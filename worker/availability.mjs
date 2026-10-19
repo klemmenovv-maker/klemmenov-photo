@@ -53,7 +53,14 @@ export function computeSlots({
   const slots = [];
   for (let day = firstDay; day <= lastDay; day++) {
     const midnight = day * DAY_MIN - DUBAI_OFFSET_MIN;
-    for (let t = from; t + durationMin <= to; t += stepMin) {
+    const weekday = new Date(day * DAY_MIN * 60000).getUTCDay();
+    const overrides = workHours.byWeekday || {};
+    const hours = Object.hasOwn(overrides, weekday) ? overrides[weekday] : workHours;
+    if (hours === null) continue;
+    const dailyFrom = parseClock(hours.from, 'workHours.day.from');
+    const dailyTo = parseClock(hours.to, 'workHours.day.to');
+    if (dailyFrom >= dailyTo) throw new RangeError('Invalid daily work hours');
+    for (let t = dailyFrom; t + durationMin <= dailyTo; t += stepMin) {
       const s = midnight + t;
       if (s < earliest || s >= horizon) continue;
       if (blocked.some((b) => s < b.end && s + durationMin > b.start)) continue;
