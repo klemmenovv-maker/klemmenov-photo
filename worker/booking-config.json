@@ -1,0 +1,11 @@
+{
+  "workHours": { "from": "09:00", "to": "20:00" },
+  "bufferMin": 30,
+  "minNoticeHours": 24,
+  "horizonDays": 60,
+  "stepMin": 30,
+  "holdMinutes": 15,
+  "package_duration_min": { "beauty": 120, "premium": 240 },
+  "rate_limit": { "checkout_per_min": 10, "availability_per_min": 60, "webhook_per_min": 120 },
+  "max_body_bytes": 8192
+}

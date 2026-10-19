@@ -1,0 +1,24 @@
+# Cloudflare Worker for the booking system.
+# Secrets are NEVER stored here. Set them with `wrangler secret put <NAME>`:
+#   ZIINA_TOKEN            Ziina API token
+#   ZIINA_WEBHOOK_SECRET   (optional) HMAC secret registered with the Ziina webhook
+#   TELEGRAM_BOT_TOKEN     Telegram bot token
+#   TELEGRAM_CHAT_ID       Telegram chat id of the owner
+#   GOOGLE_SA_JSON         Google service account JSON (calendar access)
+name = "klemmenov-booking"
+main = "index.mjs"
+compatibility_date = "2025-01-01"
+
+[[kv_namespaces]]
+binding = "BOOKINGS"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+[vars]
+ALLOWED_ORIGINS = "https://klemmenovv-maker.github.io"
+SITE_URL = "https://klemmenovv-maker.github.io/klemmenov-photo"
+ZIINA_TEST = "true"
+REQUIRE_TERMS = "true"
+GOOGLE_CALENDAR_ID = "REPLACE_WITH_CALENDAR_ID"
+
+[triggers]
+crons = ["*/5 * * * *"]
