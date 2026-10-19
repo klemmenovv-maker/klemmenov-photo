@@ -95,6 +95,7 @@ def foot(x):
     keys = ['personal/', 'events/', 'commercial/', 'prices/', 'reviews/']
     links = ''.join(f'<a href="{x.home}{k}">{n}</a>' for k, n in zip(keys, L['foot_links']))
     if TERMS: links += ''.join(f'<a href="{x.home}{k}/">{L["legal_pages"][k]["link"]}</a>' for k in ('terms', 'privacy'))
+    bar = '' if x.path.startswith('book/') else f'<a class="bookbar" href="{x.home}book/">Book · from {money(min(sc["from"] for sc in C["service_cards"]), L)} AED</a>\n'
     return f'''</main>
 <footer>
 <div class="foot-top">
@@ -105,7 +106,7 @@ def foot(x):
 <div class="name" aria-hidden="true">Klemmenov</div>
 <p class="legal">© <span data-year>2026</span> Klemmenov. {L['legal']}</p>
 </footer>
-<script src="{x.up}assets/app.js" defer></script>
+{bar}<script src="{x.up}assets/app.js" defer></script>
 </body>
 </html>
 '''

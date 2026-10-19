@@ -135,6 +135,46 @@ class SiteTests(unittest.TestCase):
     def test_home_no_duplicate_hero_cta(self):
         self.assertEqual(_home().hero_btns, 1)
 
+    def test_type_scale_has_five_sizes(self):
+        import re
+        css = open(os.path.join(ROOT, "docs", "assets", "style.css"), encoding="utf-8").read()
+        css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+        sizes = set()
+        for m in re.finditer(r"font-size:\s*([^;}]+)", css):
+            v = m.group(1).strip()
+            if "vw" in v or v.startswith("clamp") or v.startswith("calc") or v.startswith("min(") or v.startswith("var(--fs-"):
+                continue
+            sizes.add(v)
+        tok = re.search(r"--fs-small:\s*([^;]+);", css).group(1).strip(), re.search(r"--fs-body:\s*([^;]+);", css).group(1).strip()
+        self.assertEqual(tok, ("15px", "17px"))
+        self.assertLessEqual(len(sizes | set(tok)), 6, sorted(sizes))
+
+    def test_mobile_book_bar_markup(self):
+        import re
+        docs = os.path.join(ROOT, "docs")
+        seen = 0
+        for dp, _, fs in os.walk(docs):
+            for f in fs:
+                if not f.endswith(".html"):
+                    continue
+                path = os.path.join(dp, f)
+                rel = os.path.relpath(path, docs)
+                html = open(path, encoding="utf-8").read()
+                bars = re.findall(r'<a class="bookbar" href="([^"]*)">([^<]*)</a>', html)
+                if rel.startswith("book" + os.sep):
+                    self.assertEqual(bars, [], rel)
+                    continue
+                seen += 1
+                self.assertEqual(len(bars), 1, rel)
+                href, text = bars[0]
+                self.assertIn("1,200 AED", text)
+                if href.startswith("http"):
+                    self.assertTrue(href.endswith("/book/"), rel)
+                else:
+                    target = os.path.normpath(os.path.join(dp, href))
+                    self.assertEqual(target, os.path.join(docs, "book"), rel)
+        self.assertGreater(seen, 5)
+
     def test_book_placeholder_exists(self):
         with open(os.path.join(ROOT, "docs", "book", "index.html"), encoding="utf-8") as f:
             html = f.read()

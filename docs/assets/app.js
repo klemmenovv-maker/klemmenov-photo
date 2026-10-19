@@ -112,6 +112,12 @@
     render();
   });
 
+  // mobile book bar: tuck away while the footer is on screen (without JS it simply stays)
+  var bar = $('.bookbar'), foot = $('footer');
+  if (bar && foot && 'IntersectionObserver' in window) {
+    new IntersectionObserver(function (en) { bar.classList.toggle('away', en[0].isIntersecting); }).observe(foot);
+  }
+
   // footer year
   $$('[data-year]').forEach(function (e) { e.textContent = new Date().getFullYear(); });
 })();
