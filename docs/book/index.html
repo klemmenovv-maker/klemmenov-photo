@@ -29,8 +29,45 @@
 <button class="burger" aria-label="Menu" aria-expanded="false"><i></i><i></i></button>
 </header>
 <main id="main">
-<section class="ch-black">
-<div class="page-head"><h1 class="rv" style="--n:12">Book a shoot</h1><div class="row"><a class="btn rv" style="--d:140ms" href="https://wa.me/971557087169?text=Hello%2C%20I%E2%80%99m%20booking%20through%20the%20website.%20Could%20you%20let%20me%20know%20which%20dates%20are%20available%3F%20I%20would%20like%20to%20book%20a%20shoot.">WhatsApp</a></div></div>
+<section class="ch-black book">
+<div class="page-head"><h1 class="rv" style="--n:12">Book a shoot</h1></div>
+<noscript><div class="wrap book-ns"><p class="lead">This page needs JavaScript to calculate your price. You can still write to the photographer in WhatsApp.</p><a class="btn" href="https://wa.me/971557087169?text=Hello%2C%20I%E2%80%99m%20booking%20through%20the%20website.%20Could%20you%20let%20me%20know%20which%20dates%20are%20available%3F%20I%20would%20like%20to%20book%20a%20shoot.">Open WhatsApp</a></div></noscript>
+<div class="wrap book-app" data-book="{&quot;wa&quot;: &quot;971557087169&quot;, &quot;greeting&quot;: &quot;Hello, I’m booking through the website. Could you let me know which dates are available?&quot;, &quot;quoteLabels&quot;: {&quot;second_photographer&quot;: &quot;Second photographer&quot;, &quot;assistant&quot;: &quot;Assistant&quot;, &quot;studio&quot;: &quot;Studio rental&quot;, &quot;travel&quot;: &quot;Travel&quot;}, &quot;hour&quot;: &quot;hour&quot;, &quot;hours&quot;: &quot;hours&quot;, &quot;errors&quot;: {&quot;unknown_service&quot;: &quot;Choose a shoot.&quot;, &quot;invalid_hours&quot;: &quot;Choose between 1 and 12 hours.&quot;, &quot;below_minimum&quot;: &quot;This shoot has a minimum number of hours. Add more hours.&quot;, &quot;unknown_addon&quot;: &quot;One of the extras is not available.&quot;, &quot;invalid_quantity&quot;: &quot;Check the quantity of the extras.&quot;, &quot;not_available&quot;: &quot;Makeup is included in this package and cannot be added.&quot;, &quot;load&quot;: &quot;The price list could not be loaded. Please send your request in WhatsApp.&quot;}, &quot;perHour&quot;: &quot;AED / hour&quot;, &quot;currency&quot;: &quot;AED&quot;, &quot;hoursText&quot;: &quot;{n} {unit}&quot;, &quot;total&quot;: &quot;Online total&quot;, &quot;empty&quot;: &quot;Choose a shoot to see the total.&quot;, &quot;quoteWord&quot;: &quot;quote&quot;, &quot;packageNote&quot;: &quot;Makeup is already included in this package, so the makeup add-ons are not available.&quot;}">
+<form class="book-grid" novalidate>
+<div class="book-steps">
+<section class="step" data-step="service" aria-labelledby="h-service">
+<h2 id="h-service"><span class="n">1</span>Shoot and hours</h2>
+<fieldset class="opts"><legend class="sr">Choose a shoot</legend><label class="opt"><input type="radio" name="service" value="personal"><span class="opt-t">Personal photoshoot</span><span class="opt-s">1,200 AED / hour, minimum 1 hour</span></label><label class="opt"><input type="radio" name="service" value="commercial"><span class="opt-t">Commercial photoshoot</span><span class="opt-s">1,500 AED / hour, minimum 2 hours</span></label><label class="opt"><input type="radio" name="service" value="event"><span class="opt-t">Event photography</span><span class="opt-s">1,500 AED / hour, minimum 2 hours</span></label><label class="opt"><input type="radio" name="service" value="beauty"><span class="opt-t">Studio Beauty Package</span><span class="opt-s">5,100 AED, package, fixed price</span></label><label class="opt"><input type="radio" name="service" value="premium"><span class="opt-t">Premium Experience</span><span class="opt-s">10,200 AED, package, fixed price</span></label></fieldset>
+<div class="hours" data-hours><span class="hlabel" id="hours-l">Hours</span>
+<div class="stepper" role="group" aria-labelledby="hours-l"><button type="button" class="minus" aria-label="Fewer hours">−</button><output>2</output><button type="button" class="plus" aria-label="More hours">+</button></div></div>
+</section>
+<section class="step" data-step="extras" aria-labelledby="h-extras">
+<h2 id="h-extras"><span class="n">2</span>Extras</h2>
+<p class="small note" data-package-note hidden>Makeup is already included in this package, so the makeup add-ons are not available.</p>
+<div class="xlist"><div class="xrow" data-addon="makeup" data-max="10"><div class="xtxt"><span class="xname" id="x-makeup">Makeup artist</span><span class="xunit">700 AED per artist</span></div><div class="stepper" role="group" aria-labelledby="x-makeup"><button type="button" class="minus" aria-label="Fewer: Makeup artist">−</button><output>0</output><button type="button" class="plus" aria-label="More: Makeup artist">+</button></div></div><div class="xrow" data-addon="makeup_hair" data-max="10"><div class="xtxt"><span class="xname" id="x-makeup_hair">Makeup artist and hair</span><span class="xunit">1,000 AED per person</span></div><div class="stepper" role="group" aria-labelledby="x-makeup_hair"><button type="button" class="minus" aria-label="Fewer: Makeup artist and hair">−</button><output>0</output><button type="button" class="plus" aria-label="More: Makeup artist and hair">+</button></div></div><div class="xrow" data-addon="extra_retouch" data-max="100"><div class="xtxt"><span class="xname" id="x-extra_retouch">Extra retouched photo</span><span class="xunit">10 AED per photo</span></div><div class="stepper" role="group" aria-labelledby="x-extra_retouch"><button type="button" class="minus" aria-label="Fewer: Extra retouched photo">−</button><output>0</output><button type="button" class="plus" aria-label="More: Extra retouched photo">+</button></div></div><div class="xrow" data-addon="video_edit" data-max="10"><div class="xtxt"><span class="xname" id="x-video_edit">Video editing</span><span class="xunit">150 AED per video</span></div><div class="stepper" role="group" aria-labelledby="x-video_edit"><button type="button" class="minus" aria-label="Fewer: Video editing">−</button><output>0</output><button type="button" class="plus" aria-label="More: Video editing">+</button></div></div></div>
+<h3 class="sub3">Priced separately</h3>
+<p class="small note">Price confirmed by the photographer, not charged online.</p>
+<fieldset class="opts opts-q"><legend class="sr">Priced separately</legend><label class="opt opt-check"><input type="checkbox" name="quote" value="second_photographer"><span class="opt-t">Second photographer</span><span class="opt-s">from 1,200 AED / hour</span></label><label class="opt opt-check"><input type="checkbox" name="quote" value="assistant"><span class="opt-t">Assistant</span><span class="opt-s">from 600 AED / hour</span></label><label class="opt opt-check"><input type="checkbox" name="quote" value="studio"><span class="opt-t">Studio rental</span><span class="opt-s">315-500 AED / hour</span></label><label class="opt opt-check"><input type="checkbox" name="quote" value="travel"><span class="opt-t">Travel</span><span class="opt-s">300-600 AED</span></label></fieldset>
+</section>
+<section class="step" data-step="date" aria-labelledby="h-date">
+<h2 id="h-date"><span class="n">3</span>Preferred date and time</h2>
+<div class="field"><label for="f-date">Preferred date and time</label><input id="f-date" name="date" type="text" autocomplete="off" placeholder="e.g. Sat 14 Nov, 18:00 to 21:00"><p class="small note">The photographer confirms availability in WhatsApp.</p></div>
+</section>
+</div>
+<aside class="summary" aria-labelledby="h-sum">
+<h2 id="h-sum">Your request</h2>
+<div data-summary aria-live="polite" aria-atomic="true"></div>
+</aside>
+<section class="step book-contact" data-step="contact" aria-labelledby="h-contact">
+<h2 id="h-contact"><span class="n">4</span>Contact</h2>
+<div class="field"><label for="f-name">Your name</label><input id="f-name" name="name" type="text" autocomplete="name"></div>
+<div class="field"><label for="f-reach">WhatsApp or Telegram</label><input id="f-reach" name="reach" type="text" autocomplete="tel" placeholder="+971 or @username"></div>
+<div class="field"><label for="f-notes">Notes (optional)</label><textarea id="f-notes" name="notes" rows="3" placeholder="Location, occasion, anything we should know"></textarea></div>
+<a class="btn" data-request href="#" target="_blank" rel="noopener" aria-disabled="true">Request in WhatsApp</a>
+<p class="small note">Nothing is charged online. The photographer replies in WhatsApp to confirm the date and the final price.</p>
+</section>
+</form>
+</div>
 </section>
 </main>
 <footer>
@@ -43,5 +80,6 @@
 <p class="legal">© <span data-year>2026</span> Klemmenov. Dubai.</p>
 </footer>
 <script src="../assets/app.js" defer></script>
+<script type="module" src="../assets/book.mjs"></script>
 </body>
 </html>

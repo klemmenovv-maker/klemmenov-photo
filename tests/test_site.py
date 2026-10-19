@@ -182,6 +182,24 @@ class SiteTests(unittest.TestCase):
         self.assertIn("wa.me", html)
 
 
+    def test_book_page_request_mode(self):
+        import json, re
+        with open(os.path.join(ROOT, "docs", "book", "index.html"), encoding="utf-8") as f:
+            html = f.read()
+        self.assertNotIn("Pay deposit", html)
+        self.assertIn('<script type="module" src="../assets/book.mjs"></script>', html)
+        for step in ("service", "extras", "date", "contact"):
+            self.assertIn(f'data-step="{step}"', html)
+        m = re.search(r"<noscript>(.*?)</noscript>", html, re.S)
+        self.assertIsNotNone(m)
+        self.assertIn("https://wa.me/", m.group(1))
+        self.assertNotIn("terms", html.lower().split("<main")[1].split("</main>")[0])
+        with open(os.path.join(ROOT, "content.json"), encoding="utf-8") as f:
+            self.assertEqual(json.load(f).get("booking_api"), "")
+        self.assertTrue(os.path.exists(os.path.join(ROOT, "docs", "assets", "book-ui.mjs")))
+        self.assertTrue(os.path.exists(os.path.join(ROOT, "docs", "assets", "book.mjs")))
+
+
 class _Links(HTMLParser):
     """Anchors with text, h3-card links, details count, ids, footer hrefs."""
 

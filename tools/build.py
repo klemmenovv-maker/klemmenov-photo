@@ -235,15 +235,74 @@ def home(lang):
 '''
     w(lang, 'index.html', t + foot(x))
 
-# placeholder booking page; the full flow replaces it later
-def book(lang):
+def book(lang):  # request mode: the page only builds a WhatsApp message, nothing is charged
     x = Ctx(lang, 'book/'); L = x.L; B = L['book_page']
+    S, FA, QA = C['services'], C['fixed_addons'], C['quote_addons']
+    def price_line(sv):
+        if sv['type'] == 'hourly':
+            return f"{money(sv['rate'], L)} {B['per_hour']}, {B['min_hours'].format(n=sv['min'], unit=B['hour'] if sv['min'] == 1 else B['hours'])}"
+        return f"{money(sv['price'], L)} AED, {B['package_tag']}"
+    cards = ''.join(
+        f'<label class="opt"><input type="radio" name="service" value="{sid}"><span class="opt-t">{e(sv["label"])}</span>'
+        f'<span class="opt-s">{e(price_line(sv))}</span></label>' for sid, sv in S.items())
+    fixed = ''.join(
+        f'<div class="xrow" data-addon="{aid}" data-max="{100 if aid == "extra_retouch" else 10}">'
+        f'<div class="xtxt"><span class="xname" id="x-{aid}">{e(a["label"])}</span>'
+        f'<span class="xunit">{e(B["unit_line"].format(price=money(a["price"], L), unit=B["units"][a["per"]]))}</span></div>'
+        f'<div class="stepper" role="group" aria-labelledby="x-{aid}"><button type="button" class="minus" aria-label="{B["qty_less"]}: {e(a["label"])}">−</button>'
+        f'<output>0</output><button type="button" class="plus" aria-label="{B["qty_more"]}: {e(a["label"])}">+</button></div></div>'
+        for aid, a in FA.items())
+    quote = ''.join(
+        f'<label class="opt opt-check"><input type="checkbox" name="quote" value="{qid}"><span class="opt-t">{e(B["quote_labels"][qid])}</span>'
+        f'<span class="opt-s">{e(txt)}</span></label>' for qid, txt in QA.items())
+    cfg = html.escape(json.dumps({'wa': C['whatsapp'], 'greeting': L['wa_text'], 'quoteLabels': B['quote_labels'],
+        'hour': B['hour'], 'hours': B['hours'], 'errors': B['errors'], 'perHour': B['per_hour'], 'currency': B['summary_currency'],
+        'hoursText': B['summary_hours'], 'total': B['summary_total'], 'empty': B['summary_empty'], 'quoteWord': B['summary_quote'], 'packageNote': B['package_note']}, ensure_ascii=False), quote=True)
+    st = B['steps']
     t = head(x, B['title'], B['desc'])
-    t += f'''<section class="ch-black">
-<div class="page-head"><h1 class="rv" {fitstyle(B['h1'])}>{B['h1']}</h1><div class="row"><a class="btn rv" style="--d:140ms" href="{wa(x, L['wa_book'])}">WhatsApp</a></div></div>
+    t += f'''<section class="ch-black book">
+<div class="page-head"><h1 class="rv" {fitstyle(B['h1'])}>{B['h1']}</h1></div>
+<noscript><div class="wrap book-ns"><p class="lead">{B['noscript']}</p><a class="btn" href="{wa(x, L['wa_book'])}">{B['noscript_btn']}</a></div></noscript>
+<div class="wrap book-app" data-book="{cfg}">
+<form class="book-grid" novalidate>
+<div class="book-steps">
+<section class="step" data-step="service" aria-labelledby="h-service">
+<h2 id="h-service"><span class="n">1</span>{st[0]}</h2>
+<fieldset class="opts"><legend class="sr">{B['service_legend']}</legend>{cards}</fieldset>
+<div class="hours" data-hours><span class="hlabel" id="hours-l">{B['hours_label']}</span>
+<div class="stepper" role="group" aria-labelledby="hours-l"><button type="button" class="minus" aria-label="{B['hours_less']}">−</button><output>2</output><button type="button" class="plus" aria-label="{B['hours_more']}">+</button></div></div>
+</section>
+<section class="step" data-step="extras" aria-labelledby="h-extras">
+<h2 id="h-extras"><span class="n">2</span>{st[1]}</h2>
+<p class="small note" data-package-note hidden>{B['package_note']}</p>
+<div class="xlist">{fixed}</div>
+<h3 class="sub3">{B['extras_quote_h']}</h3>
+<p class="small note">{B['quote_note']}</p>
+<fieldset class="opts opts-q"><legend class="sr">{B['extras_quote_h']}</legend>{quote}</fieldset>
+</section>
+<section class="step" data-step="date" aria-labelledby="h-date">
+<h2 id="h-date"><span class="n">3</span>{st[2]}</h2>
+<div class="field"><label for="f-date">{B['date_label']}</label><input id="f-date" name="date" type="text" autocomplete="off" placeholder="{e(B['date_ph'])}"><p class="small note">{B['date_hint']}</p></div>
+</section>
+</div>
+<aside class="summary" aria-labelledby="h-sum">
+<h2 id="h-sum">{B['summary_h']}</h2>
+<div data-summary aria-live="polite" aria-atomic="true"></div>
+</aside>
+<section class="step book-contact" data-step="contact" aria-labelledby="h-contact">
+<h2 id="h-contact"><span class="n">4</span>{st[3]}</h2>
+<div class="field"><label for="f-name">{B['name_label']}</label><input id="f-name" name="name" type="text" autocomplete="name"></div>
+<div class="field"><label for="f-reach">{B['reach_label']}</label><input id="f-reach" name="reach" type="text" autocomplete="tel" placeholder="{e(B['reach_ph'])}"></div>
+<div class="field"><label for="f-notes">{B['notes_label']}</label><textarea id="f-notes" name="notes" rows="3" placeholder="{e(B['notes_ph'])}"></textarea></div>
+<a class="btn" data-request href="#" target="_blank" rel="noopener" aria-disabled="true">{B['request_btn']}</a>
+<p class="small note">{B['request_note']}</p>
+</section>
+</form>
+</div>
 </section>
 '''
-    w(lang, 'book/index.html', t + foot(x))
+    t += foot(x).replace('</body>', '<script type="module" src="../assets/book.mjs"></script>\n</body>')
+    w(lang, 'book/index.html', t)
 
 # ---------------------------------------------------------------- GALLERIES
 CLS = {'personal': 'ch-black', 'events': 'ch-burgundy', 'commercial': 'ch-white'}
@@ -407,6 +466,7 @@ def pricing_assets():  # one source of truth: content.json -> JSON for the brows
     os.makedirs(os.path.join(ROOT, 'worker'), exist_ok=True)
     for path in (os.path.join(D, 'assets', 'pricing.json'), os.path.join(ROOT, 'worker', 'pricing.json')):
         open(path, 'w', encoding='utf8').write(data)
-    shutil.copyfile(os.path.join(ROOT, 'shared', 'pricing.mjs'), os.path.join(D, 'assets', 'pricing.mjs'))
+    for f in ('pricing.mjs', 'book-ui.mjs'):
+        shutil.copyfile(os.path.join(ROOT, 'shared', f), os.path.join(D, 'assets', f))
 pricing_assets()
 print('built', sorted(os.listdir(D)))

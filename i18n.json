@@ -262,15 +262,67 @@
       "desc": "Choose a shoot, add extras, pick a date and send your request in WhatsApp.",
       "h1": "Book a shoot",
       "steps": [
-        "Shoot",
+        "Shoot and hours",
         "Extras",
-        "Date",
-        "Request"
+        "Preferred date and time",
+        "Contact"
       ],
       "request_btn": "Request in WhatsApp",
-      "back": "Back",
-      "next": "Next",
-      "summary_h": "Your request"
+      "summary_h": "Your request",
+      "step_label": "Step",
+      "service_legend": "Choose a shoot",
+      "per_hour": "AED / hour",
+      "min_hours": "minimum {n} {unit}",
+      "package_tag": "package, fixed price",
+      "hours_label": "Hours",
+      "hours_less": "Fewer hours",
+      "hours_more": "More hours",
+      "hour": "hour",
+      "hours": "hours",
+      "package_note": "Makeup is already included in this package, so the makeup add-ons are not available.",
+      "extras_fixed_h": "Added to the online total",
+      "extras_quote_h": "Priced separately",
+      "unit_line": "{price} AED per {unit}",
+      "qty_less": "Fewer",
+      "qty_more": "More",
+      "quote_note": "Price confirmed by the photographer, not charged online.",
+      "quote_labels": {
+        "second_photographer": "Second photographer",
+        "assistant": "Assistant",
+        "studio": "Studio rental",
+        "travel": "Travel"
+      },
+      "date_label": "Preferred date and time",
+      "date_ph": "e.g. Sat 14 Nov, 18:00 to 21:00",
+      "date_hint": "The photographer confirms availability in WhatsApp.",
+      "name_label": "Your name",
+      "reach_label": "WhatsApp or Telegram",
+      "reach_ph": "+971 or @username",
+      "notes_label": "Notes (optional)",
+      "notes_ph": "Location, occasion, anything we should know",
+      "summary_hours": "{n} {unit}",
+      "summary_total": "Online total",
+      "summary_currency": "AED",
+      "summary_quote": "quote",
+      "summary_empty": "Choose a shoot to see the total.",
+      "request_note": "Nothing is charged online. The photographer replies in WhatsApp to confirm the date and the final price.",
+      "errors": {
+        "unknown_service": "Choose a shoot.",
+        "invalid_hours": "Choose between 1 and 12 hours.",
+        "below_minimum": "This shoot has a minimum number of hours. Add more hours.",
+        "unknown_addon": "One of the extras is not available.",
+        "invalid_quantity": "Check the quantity of the extras.",
+        "not_available": "Makeup is included in this package and cannot be added.",
+        "load": "The price list could not be loaded. Please send your request in WhatsApp."
+      },
+      "noscript": "This page needs JavaScript to calculate your price. You can still write to the photographer in WhatsApp.",
+      "noscript_btn": "Open WhatsApp",
+      "units": {
+        "artist": "artist",
+        "person": "person",
+        "photo": "photo",
+        "video": "video"
+      }
     },
     "legal_pages": {
       "terms": {
