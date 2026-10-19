@@ -1,26 +1,41 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  HOLD_MINUTES, createHold, getBooking, attachIntent, markPaid, markNeedsAttention,
-  releaseExpired, BookingNotFound, IntentMismatch, NotPaid, AmountMismatch,
+  HOLD_MINUTES, BOOKING_PAID_RETENTION_S, createHold, getBooking, attachIntent, markPaid, markNeedsAttention,
+  releaseExpired, BookingNotFound, InvalidState, IntentMismatch, NotPaid, AmountMismatch,
 } from './bookings.mjs';
 
 class MemKV {
-  constructor() { this.m = new Map(); this.afterPut = null; }
+  constructor({ pageSize = 1000, yieldBetween = false } = {}) {
+    this.m = new Map(); this.afterPut = null; this.pageSize = pageSize; this.yieldBetween = yieldBetween;
+    this.puts = []; this.getCount = new Map(); this.stalePuts = 0;
+    this.version = new Map(); this.lastRead = new Map();
+  }
   async get(key, type) {
-    await Promise.resolve();
+    this.getCount.set(key, (this.getCount.get(key) ?? 0) + 1);
+    const ver = this.version.get(key) ?? 0;
+    this.lastRead.set(key, ver);
     const v = this.m.get(key);
+    await Promise.resolve();
+    if (this.yieldBetween) for (let i = 0; i < 5; i++) await Promise.resolve();
     if (v === undefined) return null;
     return type === 'json' ? JSON.parse(v) : v;
   }
-  async put(key, value) {
+  async put(key, value, opts) {
     await Promise.resolve(); await Promise.resolve();
+    if ((this.version.get(key) ?? 0) !== (this.lastRead.get(key) ?? 0)) this.stalePuts += 1;
+    this.puts.push({ key, opts });
     this.m.set(key, value);
+    this.version.set(key, (this.version.get(key) ?? 0) + 1);
     if (this.afterPut) await this.afterPut(key);
   }
-  async delete(key) { this.m.delete(key); }
-  async list({ prefix = '' } = {}) {
-    return { keys: [...this.m.keys()].filter((k) => k.startsWith(prefix)).map((name) => ({ name })), list_complete: true };
+  async delete(key) { this.m.delete(key); this.version.set(key, (this.version.get(key) ?? 0) + 1); }
+  async list({ prefix = '', cursor } = {}) {
+    const all = [...this.m.keys()].filter((k) => k.startsWith(prefix)).sort();
+    const from = cursor ? Number(cursor) : 0;
+    const page = all.slice(from, from + this.pageSize);
+    const done = from + this.pageSize >= all.length;
+    return { keys: page.map((name) => ({ name })), list_complete: done, ...(done ? {} : { cursor: String(from + this.pageSize) }) };
   }
 }
 
@@ -188,7 +203,10 @@ test('markPaid after expiry flags paid_needs_attention when the slot was retaken
   const t = '2026-10-18T10:20:00+04:00';
   await releaseExpired(kv, t);
   assert.ok((await createHold(kv, mk(S(10), S(11)), t)).ok);
+  const otherBefore = JSON.parse(kv.m.get('slots:2026-10-20'));
   const r = await markPaid(kv, id, intent('pi_1'), t);
+  assert.deepEqual(JSON.parse(kv.m.get('slots:2026-10-20')), otherBefore);
+  assert.equal(otherBefore.length, 1);
   assert.equal(r.changed, true);
   assert.equal(r.conflict, true);
   assert.equal(r.booking.status, 'paid_needs_attention');
@@ -233,4 +251,127 @@ test('attachIntent stores intent id; unknown id throws', async () => {
   const { id } = await createHold(kv, mk(S(10), S(11)), NOW);
   assert.equal((await attachIntent(kv, id, 'pi_9')).intentId, 'pi_9');
   await assert.rejects(attachIntent(kv, 'missing', 'x'), BookingNotFound);
+});
+
+const days = (n) => n * 86400;
+
+test('TTLs: slots index and booking records carry exact expirationTtl', async () => {
+  const kv = new MemKV();
+  const { id } = await createHold(kv, mk(S(10), S(11)), NOW);
+  // end of 2026-10-20 Dubai = 2026-10-21T00:00+04:00; NOW = 2026-10-18T10:00+04:00 -> 62h + 2d margin
+  const slotPut = kv.puts.find((p) => p.key === 'slots:2026-10-20');
+  assert.equal(slotPut.opts.expirationTtl, 62 * 3600 + days(2));
+  const held = kv.puts.find((p) => p.key === `booking:${id}`);
+  assert.equal(held.opts.expirationTtl, 15 * 60 + days(2));
+  await attachIntent(kv, id, 'pi_1', NOW);
+  await markPaid(kv, id, intent('pi_1'), NOW);
+  const paidPut = kv.puts.filter((p) => p.key === `booking:${id}`).at(-1);
+  assert.equal(paidPut.opts.expirationTtl, days(2) + BOOKING_PAID_RETENTION_S);
+  assert.equal(BOOKING_PAID_RETENTION_S, days(400));
+  assert.ok(kv.puts.every((p) => p.opts.expirationTtl >= 60));
+});
+
+test('TTL never below KV minimum of 60s', async () => {
+  const kv = new MemKV();
+  await createHold(kv, mk('2026-10-18T10:00:00+04:00', '2026-10-18T11:00:00+04:00'), '2030-01-01T00:00:00+04:00');
+  assert.ok(kv.puts.every((p) => p.opts.expirationTtl >= 60));
+  const slot = kv.puts.find((p) => p.key.startsWith('slots:'));
+  assert.equal(slot.opts.expirationTtl, 60);
+});
+
+test('releaseExpired skips day keys older than yesterday (Dubai)', async () => {
+  const kv = new MemKV();
+  const old = [{ id: 'old', start: '2020-01-01T10:00:00+04:00', end: '2020-01-01T11:00:00+04:00', createdAt: '2020-01-01T00:00:00Z', holdUntil: '2020-01-01T00:15:00Z', status: 'held' }];
+  kv.m.set('slots:2020-01-01', JSON.stringify(old));
+  const { id } = await createHold(kv, mk(S(10, 0, 17), S(11, 0, 17)), '2026-10-17T00:00:00+04:00');
+  assert.equal(await releaseExpired(kv, NOW), 1);
+  assert.equal(kv.getCount.get('slots:2020-01-01') ?? 0, 0);
+  assert.ok(kv.getCount.get('slots:2026-10-17') >= 1);
+  assert.equal((await getBooking(kv, id)).status, 'expired');
+});
+
+test('releaseExpired paginates kv.list', async () => {
+  const kv = new MemKV({ pageSize: 2 });
+  for (let d = 20; d < 25; d++) await createHold(kv, mk(S(10, 0, d), S(11, 0, d)), NOW);
+  assert.equal(await releaseExpired(kv, '2026-10-18T11:00:00+04:00'), 5);
+});
+
+test('booking spanning Dubai midnight throws RangeError; ending exactly at midnight is fine', async () => {
+  const kv = new MemKV();
+  await assert.rejects(createHold(kv, mk(S(23), S(1, 0, 21)), NOW), RangeError);
+  assert.ok((await createHold(kv, mk(S(23), S(0, 0, 21)), NOW)).ok);
+});
+
+test('depositAed must be a positive safe integer', async () => {
+  const kv = new MemKV();
+  for (const bad of [0, -5, 10.5, '100', NaN, undefined]) {
+    await assert.rejects(createHold(kv, mk(S(10), S(11), { depositAed: bad }), NOW), RangeError);
+  }
+});
+
+test('attachIntent refuses non-held bookings (InvalidState)', async () => {
+  const kv = new MemKV();
+  const a = await createHold(kv, mk(S(10), S(11)), NOW);
+  await attachIntent(kv, a.id, 'pi_1');
+  await markPaid(kv, a.id, intent('pi_1'), NOW);
+  await assert.rejects(attachIntent(kv, a.id, 'pi_2'), InvalidState);
+  const b = await createHold(kv, mk(S(12), S(13)), NOW);
+  await releaseExpired(kv, '2026-10-18T11:00:00+04:00');
+  await assert.rejects(attachIntent(kv, b.id, 'pi_3'), InvalidState);
+});
+
+test('markNeedsAttention re-blocks a lapsed slot when free', async () => {
+  const kv = new MemKV();
+  const { id } = await createHold(kv, mk(S(10), S(11)), NOW);
+  const t = '2026-10-18T11:00:00+04:00';
+  await releaseExpired(kv, t);
+  await markNeedsAttention(kv, id, 'calendar_failed', t);
+  assert.deepEqual(await createHold(kv, mk(S(10), S(11)), t), { ok: false, error: 'slot_taken' });
+});
+
+test('markNeedsAttention keeps the slot blocked and survives releaseExpired', async () => {
+  const kv = new MemKV();
+  const { id } = await createHold(kv, mk(S(10), S(11)), NOW);
+  await markNeedsAttention(kv, id, 'calendar_failed', NOW);
+  const later = '2026-10-19T10:00:00+04:00';
+  assert.equal(await releaseExpired(kv, later), 0);
+  assert.equal((await getBooking(kv, id)).status, 'paid_needs_attention');
+  assert.deepEqual(await createHold(kv, mk(S(10), S(11)), later), { ok: false, error: 'slot_taken' });
+});
+
+test('markNeedsAttention leaves another holder untouched when the slot was retaken', async () => {
+  const kv = new MemKV();
+  const { id } = await createHold(kv, mk(S(10), S(11)), NOW);
+  const t = '2026-10-18T11:00:00+04:00';
+  await releaseExpired(kv, t);
+  const other = await createHold(kv, mk(S(10), S(11)), t);
+  const before = JSON.parse(kv.m.get('slots:2026-10-20'));
+  const b = await markNeedsAttention(kv, id, 'calendar_failed', t);
+  assert.equal(b.status, 'paid_needs_attention');
+  assert.equal(b.reason, 'calendar_failed');
+  assert.deepEqual(JSON.parse(kv.m.get('slots:2026-10-20')), before);
+  assert.equal(before[0].id, other.id);
+});
+
+test('cross-isolate loss on a still-valid hold uses reason slot_taken', async () => {
+  const kv = new MemKV();
+  const { id } = await createHold(kv, mk(S(10), S(11)), NOW);
+  await attachIntent(kv, id, 'pi_1');
+  const idx = JSON.parse(kv.m.get('slots:2026-10-20'));
+  idx.push({ id: 'foreign', start: S(10), end: S(11), createdAt: '2026-10-18T05:00:00.000Z', holdUntil: '2026-10-18T07:00:00.000Z', status: 'paid' });
+  kv.m.set('slots:2026-10-20', JSON.stringify(idx));
+  const r = await markPaid(kv, id, intent('pi_1'), '2026-10-18T10:05:00+04:00');
+  assert.equal(r.conflict, true);
+  assert.equal(r.booking.reason, 'slot_taken');
+});
+
+test('mutex: concurrent holds never lose updates (fails without the lock)', async () => {
+  const kv = new MemKV({ yieldBetween: true });
+  const rs = await Promise.all(Array.from({ length: 6 }, () => createHold(kv, mk(S(10), S(12)), NOW)));
+  assert.equal(rs.filter((r) => r.ok).length, 1);
+  assert.equal(kv.stalePuts, 0);
+  const rs2 = await Promise.all(Array.from({ length: 6 }, (_, i) => createHold(kv, mk(S(13 + i), S(14 + i)), NOW)));
+  assert.ok(rs2.every((r) => r.ok));
+  assert.equal(kv.stalePuts, 0);
+  assert.equal(JSON.parse(kv.m.get('slots:2026-10-20')).length, 7);
 });

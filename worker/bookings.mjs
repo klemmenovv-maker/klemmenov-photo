@@ -17,10 +17,22 @@
 // propagation window can both pass step 2 (last write wins, one entry may be
 // clobbered). At single-owner volume this is very unlikely; the real upgrade
 // path is a Durable Object per day, which gives true serialisation.
-// Bookings that span Dubai midnight are indexed under the start day only.
-// Only minimal PII is stored and payment tokens are never persisted.
+// A booking may not span Dubai midnight (createHold throws RangeError), so the
+// single start-day index is sufficient.
+//
+// Retention / PII: booking records hold name, contact and notes (PII) and never
+// payment tokens. Every write carries an expirationTtl so nothing lives forever:
+//   slots:<day>  until the end of that Dubai day + 2 days
+//   booking:<id> held/expired: 2 days after holdUntil;
+//                paid / paid_needs_attention: 400 days after the booking start
+// TTLs are refreshed on each write of the record. releaseExpired only scans day
+// keys from yesterday (Dubai) onward to keep KV reads bounded.
 
 export const HOLD_MINUTES = 15;
+export const KV_MIN_TTL_S = 60;
+export const SLOT_TTL_MARGIN_S = 2 * 86400;
+export const BOOKING_HELD_TTL_AFTER_HOLD_S = 2 * 86400;
+export const BOOKING_PAID_RETENTION_S = 400 * 86400;
 
 const DUBAI_OFFSET_MS = 4 * 3600000;
 const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/;
@@ -30,6 +42,9 @@ export class BookingNotFound extends Error {
 }
 export class IntentMismatch extends Error {
   constructor(msg = 'payment intent does not belong to this booking') { super(msg); this.name = 'IntentMismatch'; }
+}
+export class InvalidState extends Error {
+  constructor(msg = 'booking is not in a valid state for this operation') { super(msg); this.name = 'InvalidState'; }
 }
 export class NotPaid extends Error {
   constructor(msg = 'payment intent is not completed') { super(msg); this.name = 'NotPaid'; }
@@ -68,6 +83,18 @@ function beats(a, b) {
   return a.id < b.id;
 }
 
+function slotsTtl(key, nowMs) {
+  const endMs = Date.parse(`${key.slice('slots:'.length)}T00:00:00+04:00`) + 86400000;
+  return Math.max(KV_MIN_TTL_S, Math.ceil((endMs - nowMs) / 1000) + SLOT_TTL_MARGIN_S);
+}
+
+function bookingTtl(b, nowMs) {
+  const keepUntilMs = (b.status === 'paid' || b.status === 'paid_needs_attention')
+    ? Date.parse(b.start) + BOOKING_PAID_RETENTION_S * 1000
+    : Date.parse(b.holdUntil) + BOOKING_HELD_TTL_AFTER_HOLD_S * 1000;
+  return Math.max(KV_MIN_TTL_S, Math.ceil((keepUntilMs - nowMs) / 1000));
+}
+
 const locks = new Map();
 function withLock(key, fn) {
   const prev = locks.get(key) ?? Promise.resolve();
@@ -83,16 +110,17 @@ async function readIndex(kv, key) {
   return Array.isArray(idx) ? idx : [];
 }
 
-async function writeIndex(kv, key, idx) {
+async function writeIndex(kv, key, idx, nowMs) {
   if (idx.length === 0) await kv.delete(key);
-  else await kv.put(key, JSON.stringify(idx));
+  else await kv.put(key, JSON.stringify(idx), { expirationTtl: slotsTtl(key, nowMs) });
 }
 
 async function loadBooking(kv, id) {
   return (await kv.get(bookingKey(id), 'json')) ?? null;
 }
 
-const saveBooking = (kv, b) => kv.put(bookingKey(b.id), JSON.stringify(b));
+const saveBooking = (kv, b, nowMs) =>
+  kv.put(bookingKey(b.id), JSON.stringify(b), { expirationTtl: bookingTtl(b, nowMs) });
 
 // Try to claim the slot for booking `b` with the given index status. Returns
 // true when the slot is ours after verification.
@@ -103,35 +131,18 @@ function claimSlot(kv, b, status, nowMs) {
     const others = idx.filter((e) => e.id !== b.id);
     const entry = { id: b.id, start: b.start, end: b.end, createdAt: b.createdAt, holdUntil: b.holdUntil, status };
     if (others.some((e) => isActive(e, nowMs) && overlaps(e, entry))) return false;
-    await writeIndex(kv, key, [...others, entry]);
+    await writeIndex(kv, key, [...others, entry], nowMs);
 
     const after = await readIndex(kv, key);
     const mine = after.find((e) => e.id === b.id);
-    const lost = !mine || after.some((e) => e.id !== b.id && isActive(e, nowMs) && overlaps(e, mine) && beats(e, mine));
+    if (!mine) return false; // our entry was clobbered: treat as lost, write nothing
+    const lost = after.some((e) => e.id !== b.id && isActive(e, nowMs) && overlaps(e, mine) && beats(e, mine));
     if (lost) {
       const fresh = await readIndex(kv, key);
-      await writeIndex(kv, key, fresh.filter((e) => e.id !== b.id));
+      await writeIndex(kv, key, fresh.filter((e) => e.id !== b.id), nowMs);
       return false;
     }
     return true;
-  });
-}
-
-function removeFromIndex(kv, b) {
-  const key = dayKey(Date.parse(b.start));
-  return withLock(key, async () => {
-    const idx = await readIndex(kv, key);
-    if (idx.some((e) => e.id === b.id)) await writeIndex(kv, key, idx.filter((e) => e.id !== b.id));
-  });
-}
-
-function setIndexStatus(kv, b, status) {
-  const key = dayKey(Date.parse(b.start));
-  return withLock(key, async () => {
-    const idx = await readIndex(kv, key);
-    if (idx.some((e) => e.id === b.id)) {
-      await writeIndex(kv, key, idx.map((e) => (e.id === b.id ? { ...e, status } : e)));
-    }
   });
 }
 
@@ -142,6 +153,10 @@ export async function createHold(kv, booking, now) {
   const startMs = toMs(booking?.start, 'start');
   const endMs = toMs(booking?.end, 'end');
   if (endMs <= startMs) throw new RangeError('end must be after start');
+  if (dubaiDay(endMs - 1) !== dubaiDay(startMs)) throw new RangeError('booking must not span Dubai midnight');
+  if (!Number.isSafeInteger(booking.depositAed) || booking.depositAed <= 0) {
+    throw new RangeError('depositAed must be a positive safe integer');
+  }
 
   const id = crypto.randomUUID();
   const record = {
@@ -165,18 +180,19 @@ export async function createHold(kv, booking, now) {
   };
 
   if (!(await claimSlot(kv, record, 'held', nowMs))) return { ok: false, error: 'slot_taken' };
-  await saveBooking(kv, record);
+  await saveBooking(kv, record, nowMs);
   return { ok: true, id };
 }
 
 export const getBooking = (kv, id) => loadBooking(kv, id);
 
-export function attachIntent(kv, id, intentId) {
+export function attachIntent(kv, id, intentId, now = new Date()) {
   return withLock(bookingKey(id), async () => {
     const b = await loadBooking(kv, id);
     if (!b) throw new BookingNotFound(id);
+    if (b.status !== 'held') throw new InvalidState(`cannot attach intent to a ${b.status} booking`);
     const next = { ...b, intentId };
-    await saveBooking(kv, next);
+    await saveBooking(kv, next, toMs(now, 'now'));
     return next;
   });
 }
@@ -197,22 +213,26 @@ export function markPaid(kv, id, intent, now) {
     const claimed = await claimSlot(kv, b, 'paid', nowMs);
     if (claimed) {
       const next = { ...b, status: 'paid', paidAt };
-      await saveBooking(kv, next);
+      await saveBooking(kv, next, nowMs);
       return { changed: true, booking: next };
     }
-    const next = { ...b, status: 'paid_needs_attention', reason: 'slot_taken_after_expiry', paidAt };
-    await saveBooking(kv, next);
+    const lapsed = b.status === 'expired' || Date.parse(b.holdUntil) <= nowMs;
+    const next = { ...b, status: 'paid_needs_attention', reason: lapsed ? 'slot_taken_after_expiry' : 'slot_taken', paidAt };
+    await saveBooking(kv, next, nowMs);
     return { changed: true, booking: next, conflict: true };
   });
 }
 
-export function markNeedsAttention(kv, id, reason) {
+export function markNeedsAttention(kv, id, reason, now = new Date()) {
   return withLock(bookingKey(id), async () => {
+    const nowMs = toMs(now, 'now');
     const b = await loadBooking(kv, id);
     if (!b) throw new BookingNotFound(id);
     const next = { ...b, status: 'paid_needs_attention', reason };
-    await saveBooking(kv, next);
-    await setIndexStatus(kv, b, 'paid_needs_attention');
+    // Make the entry permanent; re-block the slot if it lapsed and is still
+    // free. If someone else holds it, leave their entry untouched.
+    await claimSlot(kv, next, 'paid_needs_attention', nowMs);
+    await saveBooking(kv, next, nowMs);
     return next;
   });
 }
@@ -227,19 +247,20 @@ export async function releaseExpired(kv, now) {
     cursor = page.list_complete === false ? page.cursor : undefined;
   } while (cursor);
 
+  const cutoff = dubaiDay(nowMs - 86400000);
   let released = 0;
-  for (const key of keys) {
+  for (const key of keys.filter((k) => k.slice('slots:'.length) >= cutoff)) {
     const dropped = await withLock(key, async () => {
       const idx = await readIndex(kv, key);
       const gone = idx.filter((e) => !isActive(e, nowMs));
-      if (gone.length) await writeIndex(kv, key, idx.filter((e) => isActive(e, nowMs)));
+      if (gone.length) await writeIndex(kv, key, idx.filter((e) => isActive(e, nowMs)), nowMs);
       return gone;
     });
     for (const e of dropped) {
       const marked = await withLock(bookingKey(e.id), async () => {
         const b = await loadBooking(kv, e.id);
         if (!b || b.status !== 'held') return false;
-        await saveBooking(kv, { ...b, status: 'expired' });
+        await saveBooking(kv, { ...b, status: 'expired' }, nowMs);
         return true;
       });
       if (marked) released += 1;
