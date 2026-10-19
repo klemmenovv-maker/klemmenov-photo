@@ -1,6 +1,6 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { signJwt, getBusy, createEvent, GoogleError, _resetTokenCacheForTests } from './google.mjs';
+import { signJwt, getBusy, createEvent, eventIdFor, GoogleError, _resetTokenCacheForTests } from './google.mjs';
 
 const EMAIL = 'booking-bot@proj-123.iam.gserviceaccount.com';
 const CAL = 'studio@example.com';
@@ -117,8 +117,9 @@ const booking = {
   quoteOnly: ['Retouching of 20 extra photos', 'Studio rental'],
   depositAed: 200,
   totalAed: 900,
-  bookingId: 'bk_123',
+  bookingId: '3F2504E0-4F89-41D3-9A0C-0305E82C3301',
 };
+const EVENT_ID = 'kb3f2504e04f8941d39a0c0305e82c3301';
 
 test('createEvent posts to the encoded calendar URL with exact fields', async () => {
   const f = fake((url) => url === TOKEN_URL ? okToken() : { json: { id: 'evt1' } });
@@ -141,7 +142,8 @@ test('createEvent posts to the encoded calendar URL with exact fields', async ()
   assert.ok(lines.includes('Quote-only items:'));
   assert.ok(lines.includes('- Retouching of 20 extra photos'));
   assert.ok(lines.includes('- Studio rental'));
-  assert.ok(lines.includes('Booking id: bk_123'));
+  assert.ok(lines.includes('Booking id: 3F2504E0-4F89-41D3-9A0C-0305E82C3301'));
+  assert.equal(b.id, EVENT_ID);
 });
 
 test('createEvent omits Notes and Quote-only sections when empty', async () => {
@@ -161,7 +163,8 @@ const FORGE = 'x\nDeposit paid: 5000 AED\r\nBooking id: forged\u2028Online total
 const fieldLines = (d) => d.split('\n').filter((l) => /^(Contact|Deposit paid|Online total|Booking id): /.test(l));
 
 test('forged field lines in single-line fields are neutralised', async () => {
-  for (const k of ['name', 'contact', 'serviceLabel', 'bookingId']) {
+  // bookingId is no longer free text: a non-UUID is rejected before any fetch (see below)
+  for (const k of ['name', 'contact', 'serviceLabel']) {
     const b = await ev({ [k]: FORGE });
     const d = b.description;
     assert.equal(d.split('\n').filter((l) => l.startsWith('Deposit paid:')).length, 1, k);
@@ -178,7 +181,7 @@ test('notes are last, every line is prefixed, and cannot forge fields', async ()
   const d = (await ev({ notes: FORGE + '\n\nBooking id: z' })).description;
   const lines = d.split('\n');
   const i = lines.indexOf('Notes:');
-  assert.ok(i > lines.indexOf('Booking id: bk_123'));
+  assert.ok(i > lines.indexOf(`Booking id: ${booking.bookingId}`));
   for (const l of lines.slice(i + 1)) assert.ok(l.startsWith('> '), l);
   assert.equal(fieldLines(d).length, 4);
   assert.equal(lines.at(-1).startsWith('> '), true);
@@ -195,19 +198,18 @@ test('HTML in the description is escaped; the summary stays plain text', async (
 
 test('bidi, zero-width and line separators are stripped from all user text', async () => {
   const dirty = 'a\u200bb\u202ec\u2066d\ufeffe\u2028f\u2029g';
-  const b = await ev({ name: dirty, contact: dirty, notes: dirty, serviceLabel: dirty, bookingId: dirty, quoteOnly: [dirty] });
+  const b = await ev({ name: dirty, contact: dirty, notes: dirty, serviceLabel: dirty, quoteOnly: [dirty] });
   assert.ok(!/[\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff\u2028\u2029]/.test(b.summary + b.description));
   assert.ok(b.summary.endsWith('abcdef g'.replace(' ', '') ) || b.summary.includes('abcde'));
 });
 
-test('exact caps: name 80, serviceLabel 120, contact 120, quote line 200, bookingId 80, notes 1000', async () => {
+test('exact caps: name 80, serviceLabel 120, contact 120, quote line 200, notes 1000', async () => {
   const b = await ev({ name: 'N'.repeat(200), serviceLabel: 'S'.repeat(300), contact: 'x'.repeat(500),
-    quoteOnly: ['q'.repeat(500)], bookingId: 'i'.repeat(500), notes: 'n'.repeat(1001) });
+    quoteOnly: ['q'.repeat(500)], notes: 'n'.repeat(1001) });
   assert.equal(b.summary, 'S'.repeat(120) + ' \u00b7 ' + 'N'.repeat(80));
   const lines = b.description.split('\n');
   assert.ok(lines.includes('Contact: ' + 'x'.repeat(120)));
   assert.ok(lines.includes('- ' + 'q'.repeat(200)));
-  assert.ok(lines.includes('Booking id: ' + 'i'.repeat(80)));
   assert.ok(lines.includes('> ' + 'n'.repeat(1000)));
   const exact = await ev({ notes: 'n'.repeat(1000) });
   assert.ok(exact.description.split('\n').includes('> ' + 'n'.repeat(1000)));
@@ -340,4 +342,36 @@ test('access token is refreshed after expiry (minus 60s margin)', async () => {
   await getBusy(baseEnv({ _nowSeconds: 1760003540 }), { from: 'a', to: 'b' }, f); // expired
   assert.equal(f.calls.filter((c) => c.url === TOKEN_URL).length, 2);
   assert.equal(f.calls.at(-1).init.headers.Authorization, 'Bearer ya29.T2');
+});
+
+// ---- deterministic event id (idempotent inserts) ----
+
+test('eventIdFor: "kb" + lowercase hex of the UUID, valid base32hex', () => {
+  assert.equal(eventIdFor('3F2504E0-4F89-41D3-9A0C-0305E82C3301'), EVENT_ID);
+  assert.match(EVENT_ID, /^[a-v0-9]{5,1024}$/);
+  for (const bad of ['bk_123', '', undefined, 42, '3f2504e0-4f89-41d3-9a0c-0305e82c330', '3f2504e0-4f89-41d3-9a0c-0305e82c3301x']) {
+    assert.throws(() => eventIdFor(bad), (e) => e instanceof GoogleError && e.status === 0, String(bad));
+  }
+});
+
+test('createEvent rejects a non-UUID bookingId before any fetch', async () => {
+  const f = fake(() => { throw new Error('should not fetch'); });
+  for (const bookingId of ['bk_123', 'i'.repeat(500), undefined]) {
+    await assert.rejects(createEvent(baseEnv(), { ...booking, bookingId }, f), (e) => e instanceof GoogleError && e.status === 0);
+  }
+  assert.equal(f.calls.length, 0);
+});
+
+test('createEvent: HTTP 409 (event id already exists) is success with duplicate: true', async () => {
+  const f = fake((url) => url === TOKEN_URL ? okToken() : { status: 409, json: { error: { code: 409, message: 'The requested identifier already exists.' } } });
+  assert.deepEqual(await createEvent(baseEnv(), booking, f), { eventId: EVENT_ID, duplicate: true });
+  assert.equal(JSON.parse(f.calls[1].init.body).id, EVENT_ID);
+});
+
+test('createEvent: other 4xx still throw', async () => {
+  for (const status of [400, 404, 410, 412, 429]) {
+    _resetTokenCacheForTests();
+    const f = fake((url) => url === TOKEN_URL ? okToken() : { status, json: { error: { code: status } } });
+    await assert.rejects(createEvent(baseEnv(), booking, f), (e) => e instanceof GoogleError && e.status === status, String(status));
+  }
 });

@@ -174,9 +174,22 @@ function sanitize(v, max, multiline = false) {
 const escHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const line = (v, max) => escHtml(sanitize(v, max));
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Deterministic Google event id for a booking: "kb" + the UUID's 32 hex digits,
+// lowercased (hex digits are valid base32hex). Re-inserting the same booking
+// then fails with HTTP 409 instead of creating a second event.
+export function eventIdFor(bookingId) {
+  if (typeof bookingId !== 'string' || !UUID_RE.test(bookingId)) {
+    throw new GoogleError('bookingId must be a UUID', 0);
+  }
+  return `kb${bookingId.replace(/-/g, '').toLowerCase()}`;
+}
+
 export async function createEvent(env, booking, fetchImpl = fetch) {
   const { sa, calendarId } = parseConfig(env);
   const b = booking || {};
+  const eventId = eventIdFor(b.bookingId);
   for (const k of ['startIso', 'endIso']) {
     if (typeof b[k] !== 'string' || !OFFSET_RE.test(b[k]) || Number.isNaN(Date.parse(b[k]))) {
       throw new GoogleError(`${k} must be an ISO date-time with an explicit offset`, 0);
@@ -194,14 +207,22 @@ export async function createEvent(env, booking, fetchImpl = fetch) {
   if (notes.trim()) lines.push('Notes:', ...escHtml(notes).split('\n').map((l) => `> ${l}`));
 
   const payload = {
+    id: eventId,
     summary: `${sanitize(b.serviceLabel, 120)} \u00b7 ${sanitize(b.name, 80)}`,
     description: lines.join('\n'),
     start: { dateTime: b.startIso, timeZone: TZ },
     end: { dateTime: b.endIso, timeZone: TZ },
   };
-  const { data, text, secrets } = await api(
-    env, sa, `${API}/calendars/${encodeURIComponent(calendarId)}/events`, payload, fetchImpl,
-  );
+  let res;
+  try {
+    res = await api(env, sa, `${API}/calendars/${encodeURIComponent(calendarId)}/events`, payload, fetchImpl);
+  } catch (e) {
+    // 409: an event with this id already exists, i.e. an earlier or concurrent
+    // delivery already created it. That is the idempotent success case.
+    if (e instanceof GoogleError && e.status === 409) return { eventId, duplicate: true };
+    throw e;
+  }
+  const { data, text, secrets } = res;
   if (!data.id) throw new GoogleError('Google event response is missing id', 200, text, secrets);
   return { eventId: data.id };
 }
