@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { handle } from './index.mjs';
+import { handle, defaultDeps } from './index.mjs';
 import {
   makeEnv, makeCtx, makeFakes, req, validBody, complete, webhookPayload, hmacHex, eventIdFor, START, DAY, SECRETS,
 } from './_helpers.mjs';
@@ -453,4 +453,19 @@ test('webhook_cross_isolate: the delivery that marks paid never mistakes the con
   assert.equal(f.events.size, 1);
   assert.equal(f.calls.notify.filter((t) => /Needs your attention/.test(t)).length, 0);
   assert.equal(f.calls.notify.filter((t) => /New paid booking/.test(t)).length, 1);
+});
+
+test('webhook 500 alert uses the production formatPaymentAlert (only notify faked)', async () => {
+  const f = makeFakes();
+  assert.equal(f.deps.telegram.formatPaymentAlert, defaultDeps.telegram.formatPaymentAlert);
+  f.deps.telegram = { ...defaultDeps.telegram, notify: f.deps.telegram.notify };
+  const env = makeEnv();
+  const { bookingId, intentId } = await booked(f, env);
+  f.getIntentImpl = async () => { throw new Error('Ziina 503'); };
+  const r = await hook(f, env, webhookPayload(intentId));
+  assert.equal(r.status, 500);
+  assert.equal(f.calls.notify.length, 1);
+  assert.match(f.calls.notify[0], /^<b>Payment webhook failed<\/b>/);
+  assert.ok(f.calls.notify[0].includes(bookingId));
+  assert.ok(!f.calls.log.some((l) => l.event === 'telegram_failed'));
 });

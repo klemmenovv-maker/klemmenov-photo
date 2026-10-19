@@ -11,7 +11,7 @@ import { computeSlots } from './availability.mjs';
 import * as bookings from './bookings.mjs';
 import { createIntent, getIntent } from './ziina.mjs';
 import { getBusy, createEvent } from './google.mjs';
-import { notify, formatPaid, formatAttention } from './telegram.mjs';
+import { notify, formatPaid, formatAttention, formatPaymentAlert } from './telegram.mjs';
 import { corsFor, toResponse, preflight, overLimit, createMemoryLimiter, fail, reply, log } from './http.mjs';
 import { availability } from './routes-availability.mjs';
 import { checkout } from './routes-checkout.mjs';
@@ -21,7 +21,7 @@ export const defaultDeps = {
   now: () => new Date(),
   ziina: { createIntent, getIntent },
   google: { getBusy, createEvent },
-  telegram: { notify, formatPaid, formatAttention },
+  telegram: { notify, formatPaid, formatAttention, formatPaymentAlert },
   bookings,
   computeSlots,
   quote,

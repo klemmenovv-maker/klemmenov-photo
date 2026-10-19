@@ -1,12 +1,7 @@
 // Shared test doubles (no side effects at import time).
-import * as bookings from './bookings.mjs';
-import { computeSlots } from './availability.mjs';
-import { formatPaid, formatAttention, formatPaymentAlert } from './telegram.mjs';
 import { eventIdFor } from './google.mjs';
 import { createMemoryLimiter } from './http.mjs';
-import { quote } from '../shared/pricing.mjs';
-import pricing from './pricing.json' with { type: 'json' };
-import config from './booking-config.json' with { type: 'json' };
+import { defaultDeps } from './index.mjs';
 
 // In-memory Cloudflare KV double used by bookings and route tests.
 export class MemKV {
@@ -104,6 +99,34 @@ export function req(method, path, { body, headers = {}, ip = freshIp(), origin }
   return new Request(`https://booking.example.test${path}`, { method, headers: h, body: b });
 }
 
+// Network functions that must be faked in every route test.
+const NETWORK = { ziina: 'all', google: 'all', telegram: ['notify'] };
+
+// Build deps with exactly the shape of defaultDeps: same top-level keys, same
+// function names per group; network functions replaced by fakes.
+export function depsFrom(fake, overrides) {
+  const deps = {};
+  for (const [key, value] of Object.entries(defaultDeps)) {
+    if (Object.hasOwn(fake, key)) {
+      for (const name of Object.keys(fake[key])) {
+        if (!Object.hasOwn(value, name)) throw new Error(`fake ${key}.${name} is not wired in defaultDeps`);
+      }
+      const must = NETWORK[key] === 'all' ? Object.keys(value) : (NETWORK[key] ?? []);
+      for (const name of must) {
+        if (!Object.hasOwn(fake[key], name)) throw new Error(`network function ${key}.${name} has no fake`);
+      }
+      deps[key] = Object.fromEntries(Object.keys(value).map((name) => [name, fake[key][name] ?? value[name]]));
+    } else {
+      deps[key] = value;
+    }
+  }
+  for (const [key, value] of Object.entries(overrides)) {
+    if (!Object.hasOwn(defaultDeps, key)) throw new Error(`override ${key} is not a defaultDeps key`);
+    deps[key] = value;
+  }
+  return deps;
+}
+
 export function makeFakes({ now = NOW } = {}) {
   const calls = { createIntent: [], getIntent: [], getBusy: [], createEvent: [], notify: [], log: [] };
   const f = {
@@ -120,8 +143,10 @@ export function makeFakes({ now = NOW } = {}) {
     lastIntentId: null,
   };
   let n = 0;
-  f.deps = {
-    now: () => new Date(f.nowIso),
+  // Fakes for every function that talks to the network. Everything else is
+  // taken from defaultDeps itself, so the fakes can never hide a function that
+  // is missing from the production wiring.
+  const fake = {
     ziina: {
       async createIntent(env, opts) {
         calls.createIntent.push(opts);
@@ -162,19 +187,15 @@ export function makeFakes({ now = NOW } = {}) {
         calls.notify.push(text);
         if (f.notifyImpl) return f.notifyImpl(env, text);
       },
-      formatPaid,
-      formatAttention,
-      formatPaymentAlert,
     },
-    bookings,
-    computeSlots,
-    quote,
-    pricing,
-    config,
+  };
+  const overrides = {
+    now: () => new Date(f.nowIso),
     fetch: async () => { throw new Error('network is disabled in tests'); },
     log: (entry) => calls.log.push(entry),
     memoryLimiter: createMemoryLimiter(),
   };
+  f.deps = depsFrom(fake, overrides);
   return f;
 }
 

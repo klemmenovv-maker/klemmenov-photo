@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import worker, { handle } from './index.mjs';
+import worker, { handle, defaultDeps } from './index.mjs';
 import { HOLD_MINUTES, createHold, getBooking } from './bookings.mjs';
 import config from './booking-config.json' with { type: 'json' };
 import {
@@ -22,6 +22,35 @@ test('config: hold minutes match the bookings module and the brief', () => {
   assert.equal(config.holdMinutes, HOLD_MINUTES);
   assert.equal(config.rate_limit.checkout_per_min, 10);
   assert.equal(config.max_body_bytes, 8192);
+});
+
+test('defaultDeps wires every function the routes call', () => {
+  const used = {
+    telegram: ['notify', 'formatPaid', 'formatAttention', 'formatPaymentAlert'],
+    google: ['getBusy', 'createEvent'],
+    ziina: ['createIntent', 'getIntent'],
+    bookings: ['createHold', 'getBooking', 'attachIntent', 'markPaid', 'markNeedsAttention', 'releaseHold',
+      'updateBooking', 'listActiveEntries', 'releaseExpired'],
+  };
+  for (const [group, names] of Object.entries(used)) {
+    for (const name of names) assert.equal(typeof defaultDeps[group]?.[name], 'function', `${group}.${name}`);
+  }
+  for (const name of ['now', 'computeSlots', 'quote', 'fetch', 'log']) assert.equal(typeof defaultDeps[name], 'function', name);
+  for (const name of ['memoryLimiter']) assert.equal(typeof defaultDeps[name]?.hit, 'function', name);
+  assert.equal(typeof defaultDeps.pricing?.services, 'object');
+  assert.equal(defaultDeps.config, config);
+});
+
+test('route fakes have exactly the defaultDeps shape', () => {
+  const f = makeFakes();
+  assert.deepEqual(Object.keys(f.deps).sort(), Object.keys(defaultDeps).sort());
+  for (const group of ['telegram', 'google', 'ziina']) {
+    assert.deepEqual(Object.keys(f.deps[group]).sort(), Object.keys(defaultDeps[group]).sort(), group);
+  }
+  // formatters are the production ones, not test copies
+  for (const name of ['formatPaid', 'formatAttention', 'formatPaymentAlert']) {
+    assert.equal(f.deps.telegram[name], defaultDeps.telegram[name], name);
+  }
 });
 
 // ---- routing ------------------------------------------------------------------
