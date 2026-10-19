@@ -268,3 +268,67 @@ export async function releaseExpired(kv, now) {
   }
   return released;
 }
+
+// ---- additive helpers for the Worker routes ---------------------------------
+
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_LIST_DAYS = 62;
+
+function dayMs(day, field) {
+  const t = typeof day === 'string' && DAY_RE.test(day) ? Date.parse(`${day}T00:00:00+04:00`) : NaN;
+  if (!Number.isFinite(t)) throw new RangeError(`${field}: invalid day ${JSON.stringify(day)}`);
+  return t;
+}
+
+// Active (held and not lapsed, paid, paid_needs_attention) intervals for the
+// Dubai days fromDay..toDay inclusive. Returns [{start, end}] only.
+export async function listActiveEntries(kv, fromDay, toDay, now) {
+  const nowMs = toMs(now, 'now');
+  const a = dayMs(fromDay, 'fromDay');
+  const b = dayMs(toDay, 'toDay');
+  if (b < a) return [];
+  const days = Math.round((b - a) / 86400000) + 1;
+  if (days > MAX_LIST_DAYS) throw new RangeError(`day range is longer than ${MAX_LIST_DAYS} days`);
+  const idxs = await Promise.all(
+    Array.from({ length: days }, (_, i) => readIndex(kv, dayKey(a + i * 86400000))),
+  );
+  return idxs.flat().filter((e) => isActive(e, nowMs)).map((e) => ({ start: e.start, end: e.end }));
+}
+
+// Release a hold right away (payment could not be started). Only a `held`
+// booking is touched: it becomes `expired` and its day-index entry is removed.
+export function releaseHold(kv, id, now = new Date()) {
+  return withLock(bookingKey(id), async () => {
+    const nowMs = toMs(now, 'now');
+    const b = await loadBooking(kv, id);
+    if (!b || b.status !== 'held') return false;
+    await saveBooking(kv, { ...b, status: 'expired' }, nowMs);
+    const key = dayKey(Date.parse(b.start));
+    await withLock(key, async () => {
+      const idx = await readIndex(kv, key);
+      if (idx.some((e) => e.id === id)) await writeIndex(kv, key, idx.filter((e) => e.id !== id), nowMs);
+    });
+    return true;
+  });
+}
+
+const UPDATABLE = new Set(['calendarEventId', 'notifiedAt']);
+
+// Set bookkeeping fields only (calendarEventId, notifiedAt: non-empty strings).
+export async function updateBooking(kv, id, fields, now = new Date()) {
+  const keys = Object.keys(fields ?? {});
+  if (!keys.length || keys.some((k) => !UPDATABLE.has(k))) {
+    throw new RangeError('updateBooking only sets calendarEventId and notifiedAt');
+  }
+  for (const k of keys) {
+    if (typeof fields[k] !== 'string' || !fields[k]) throw new RangeError(`${k} must be a non-empty string`);
+  }
+  return withLock(bookingKey(id), async () => {
+    const b = await loadBooking(kv, id);
+    if (!b) throw new BookingNotFound(id);
+    const next = { ...b };
+    for (const k of keys) next[k] = fields[k];
+    await saveBooking(kv, next, toMs(now, 'now'));
+    return next;
+  });
+}

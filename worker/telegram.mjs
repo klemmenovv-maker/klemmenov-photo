@@ -138,6 +138,7 @@ const REASONS = {
   slot_taken: 'Payment arrived, but the slot is already taken.',
   calendar_failed: 'Payment arrived, but the calendar event could not be created.',
   amount_mismatch: 'Payment arrived, but the amount does not match the booking.',
+  calendar_conflict: 'Payment arrived, but your calendar already has an event at this time.',
 };
 
 export function formatAttention(booking, reason) {

@@ -186,6 +186,7 @@ test('formatAttention known reasons', () => {
     slot_taken: /slot.*taken/i,
     calendar_failed: /calendar/i,
     amount_mismatch: /amount/i,
+    calendar_conflict: /calendar.*already has an event/i,
   };
   for (const [reason, re] of Object.entries(expectations)) {
     const lines = formatAttention(booking, reason).split('\n');
