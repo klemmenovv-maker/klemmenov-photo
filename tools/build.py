@@ -483,7 +483,7 @@ def contact(lang):
     t += f'''<section class="ch-black">
 <div class="page-head"><h1 class="rv" {fitstyle(K['h1'])}>{K['h1']}</h1><div class="row"><p class="lead rv" style="--d:80ms">{K['lead']}</p></div></div>
 <div class="wrap" style="padding-bottom:clamp(70px,10vw,150px)"><div class="contact-list">
-<a class="rv" href="{wa(x, L['wa_book'])}"><strong>WhatsApp</strong><span>+971 55 708 7169</span></a>
+<a class="rv" href="{wa(x, L['wa_book'])}"><strong>WhatsApp</strong><span>+971 54 537 7769</span></a>
 <a class="rv" style="--d:90ms" href="{C['telegram']}"><strong>Telegram</strong><span>@klemmenov</span></a>
 <a class="rv" style="--d:180ms" href="{C['instagram']}"><strong>Instagram</strong><span>@klemmenov</span></a>
 </div></div>
