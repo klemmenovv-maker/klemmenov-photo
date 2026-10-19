@@ -191,6 +191,7 @@ export function initLive({ root, S, config, el, field, lock, getQuote, getSelect
       const code = e && e.code;
       errEl.textContent = friendlyError(code);
       errEl.hidden = false;
+      errEl.scrollIntoView({ block: 'nearest' }); // focus stays on Pay; the message must still be visible on small screens
       if (code === 'slot_taken' || code === 'slot_unavailable' || code === 'invalid_start') {
         clearSlots();
         fetchRange(true);
