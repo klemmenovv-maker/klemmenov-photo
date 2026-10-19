@@ -8,8 +8,8 @@ const IGNORED = { ok: true, ignored: true };
 const IGNORABLE = new Set(['IntentMismatch', 'NotPaid', 'BookingNotFound']);
 
 // Per-booking promise chain: deliveries for one booking are processed one at a
-// time inside this isolate, so concurrent retries cannot both create an event.
-// (Across isolates the calendar re-check below is the safety net.)
+// time inside this isolate. Across isolates, the deterministic Google event id
+// (409 on re-insert) prevents a second event and a second paid message.
 const locks = new Map();
 function withLock(key, fn) {
   const prev = locks.get(key) ?? Promise.resolve();
@@ -36,9 +36,33 @@ async function flag(c, id, reason) {
   return reply(200, { ok: true, attention: true });
 }
 
+// Owner alert for a 500 after the booking was identified: id + static reason only.
+function paymentAlert(c, bookingId, reason) {
+  const { env, ctx, deps } = c;
+  background(ctx, () => deps.telegram.notify(env, deps.telegram.formatPaymentAlert(bookingId, reason), deps.fetch),
+    () => deps.log({ event: 'telegram_failed', bookingId }));
+}
+
+const PAID = new Set(['paid', 'paid_needs_attention']);
+
 async function settle(c, bookingId, intent) {
   const { env, ctx, deps, now } = c;
   const kv = env.BOOKINGS;
+  const before = await deps.bookings.getBooking(kv, bookingId);
+  if (!before) {
+    deps.log({ event: 'webhook_ignored', bookingId, code: 'BookingNotFound' });
+    return reply(200, IGNORED);
+  }
+  // Free/busy snapshot taken BEFORE markPaid. No delivery creates this
+  // booking's event until the booking is paid, so this snapshot can never
+  // contain our own event, even if another isolate is processing a duplicate
+  // delivery at the same time.
+  let snapshot = null;
+  if (!PAID.has(before.status)) {
+    snapshot = await deps.google.getBusy(env, { from: before.start, to: before.end }, deps.fetch)
+      .then((busy) => ({ busy }), () => ({ failed: true }));
+  }
+
   let result;
   try {
     result = await deps.bookings.markPaid(kv, bookingId, intent, now);
@@ -53,7 +77,9 @@ async function settle(c, bookingId, intent) {
   const b = result.booking;
 
   // Idempotency: continue an unchanged booking only when it is plainly paid and
-  // has no calendar event yet (an earlier delivery crashed after markPaid).
+  // has no calendar event recorded yet (an earlier or concurrent delivery may
+  // have crashed or still be running; the deterministic event id makes the
+  // insert below idempotent).
   if (!result.changed && (b.calendarEventId || b.status !== 'paid')) {
     return reply(200, { ok: true, duplicate: true });
   }
@@ -63,14 +89,13 @@ async function settle(c, bookingId, intent) {
     return reply(200, { ok: true, attention: true });
   }
 
-  // Cross-isolate safety net: the calendar must still be free.
-  let busy;
-  try {
-    busy = await deps.google.getBusy(env, { from: b.start, to: b.end }, deps.fetch);
-  } catch {
-    return flag(c, bookingId, 'calendar_failed');
+  // Calendar re-check only for the delivery that turned the booking paid. A
+  // retry finds the booking already paid and skips it: its own event may
+  // already be in the calendar and must not count as a conflict.
+  if (result.changed) {
+    if (!snapshot || snapshot.failed) return flag(c, bookingId, 'calendar_failed');
+    if (snapshot.busy.some((r) => overlaps(r, b))) return flag(c, bookingId, 'calendar_conflict');
   }
-  if (busy.some((r) => overlaps(r, b))) return flag(c, bookingId, 'calendar_conflict');
 
   let event;
   try {
@@ -90,6 +115,11 @@ async function settle(c, bookingId, intent) {
     return flag(c, bookingId, 'calendar_failed');
   }
   const saved = await deps.bookings.updateBooking(kv, bookingId, { calendarEventId: event.eventId }, now);
+  if (event.duplicate) {
+    // Another delivery created the event; it also sends (or sent) the message.
+    deps.log({ event: 'calendar_event_exists', bookingId });
+    return reply(200, { ok: true, duplicate: true });
+  }
   deps.log({ event: 'booking_paid', bookingId });
   background(ctx, async () => {
     await deps.telegram.notify(env, deps.telegram.formatPaid(saved), deps.fetch);
@@ -121,14 +151,23 @@ export async function webhook(c) {
   const bookingId = await env.BOOKINGS.get(`intent:${intentId}`);
   if (!bookingId) return reply(200, IGNORED);
 
-  let intent;
+  // From here on a 500 means "a real booking may be paid but unrecorded":
+  // Ziina retries, and the owner gets a background alert (id + reason only).
   try {
-    intent = await deps.ziina.getIntent(env, intentId, deps.fetch);
+    let intent;
+    try {
+      intent = await deps.ziina.getIntent(env, intentId, deps.fetch);
+    } catch (e) {
+      deps.log({ event: 'payment_lookup_failed', bookingId, code: e?.name ?? 'Error' });
+      paymentAlert(c, bookingId, 'payment_lookup_failed');
+      return fail(500, 'payment_lookup_failed'); // no state changed: let Ziina retry
+    }
+    if (!intent || intent.status !== 'completed') return reply(200, IGNORED);
+    const lock = deps.webhookLock ?? withLock;
+    return await lock(bookingId, () => settle(c, bookingId, intent));
   } catch (e) {
-    deps.log({ event: 'payment_lookup_failed', bookingId, code: e?.name ?? 'Error' });
-    return fail(500, 'payment_lookup_failed'); // no state changed: let Ziina retry
+    deps.log({ event: 'internal_error', bookingId, code: e?.name ?? 'Error' });
+    paymentAlert(c, bookingId, 'internal_error');
+    return fail(500, 'internal_error');
   }
-  if (!intent || intent.status !== 'completed') return reply(200, IGNORED);
-
-  return withLock(bookingId, () => settle(c, bookingId, intent));
 }

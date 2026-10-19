@@ -12,7 +12,7 @@ import * as bookings from './bookings.mjs';
 import { createIntent, getIntent } from './ziina.mjs';
 import { getBusy, createEvent } from './google.mjs';
 import { notify, formatPaid, formatAttention } from './telegram.mjs';
-import { corsFor, toResponse, preflight, overLimit, fail, reply, log } from './http.mjs';
+import { corsFor, toResponse, preflight, overLimit, createMemoryLimiter, fail, reply, log } from './http.mjs';
 import { availability } from './routes-availability.mjs';
 import { checkout } from './routes-checkout.mjs';
 import { webhook } from './routes-webhook.mjs';
@@ -29,6 +29,7 @@ export const defaultDeps = {
   config,
   fetch: (...args) => fetch(...args), // unbound global fetch throws "Illegal invocation" in Workers
   log,
+  memoryLimiter: createMemoryLimiter(), // per isolate, best effort
 };
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -46,12 +47,31 @@ async function bookingLookup({ url, env, deps, now }) {
   });
 }
 
+// Rate limiting:
+//   kv     - KV counter (only /checkout: the expensive, abusable route); fails open
+//   memory - per-isolate in-memory counter, best effort, no KV writes
+//   null   - never limited: the webhook is protected by HMAC + getIntent, and
+//            blocking Ziina's retries could lose a payment confirmation.
+// (config.rate_limit.webhook_per_min is intentionally unused.)
 const ROUTES = [
-  { path: (p) => p === '/availability', method: 'GET', name: 'availability', limit: 'availability_per_min', originCheck: true, run: availability },
-  { path: (p) => p === '/checkout', method: 'POST', name: 'checkout', limit: 'checkout_per_min', originCheck: true, run: checkout },
-  { path: (p) => p === '/webhook/ziina', method: 'POST', name: 'webhook', limit: 'webhook_per_min', originCheck: false, run: webhook },
-  { path: (p) => p.startsWith('/booking/'), method: 'GET', name: 'booking', limit: 'availability_per_min', originCheck: false, run: bookingLookup },
+  { path: (p) => p === '/availability', method: 'GET', name: 'availability', limit: ['memory', 'availability_per_min'], originCheck: true, run: availability },
+  { path: (p) => p === '/checkout', method: 'POST', name: 'checkout', limit: ['kv', 'checkout_per_min'], originCheck: true, run: checkout },
+  { path: (p) => p === '/webhook/ziina', method: 'POST', name: 'webhook', limit: null, originCheck: false, run: webhook },
+  { path: (p) => p.startsWith('/booking/'), method: 'GET', name: 'booking', limit: ['memory', 'availability_per_min'], originCheck: false, run: bookingLookup },
 ];
+
+async function limited(route, request, env, deps, nowMs) {
+  if (!route.limit) return false;
+  const [kind, key] = route.limit;
+  const max = deps.config.rate_limit[key];
+  if (kind === 'memory') return deps.memoryLimiter.hit(route.name, request, nowMs, max);
+  try {
+    return await overLimit(env.BOOKINGS, route.name, request, nowMs, max);
+  } catch {
+    deps.log({ event: 'rate_limit_unavailable' }); // fail open: KV trouble must not block bookings
+    return false;
+  }
+}
 
 export async function handle(request, env, ctx, deps = defaultDeps) {
   const cors = corsFor(request, env);
@@ -67,7 +87,7 @@ export async function handle(request, env, ctx, deps = defaultDeps) {
       return toResponse(fail(403, 'origin_not_allowed'), cors);
     }
     const now = deps.now();
-    if (await overLimit(env.BOOKINGS, route.name, request, now.getTime(), deps.config.rate_limit[route.limit])) {
+    if (await limited(route, request, env, deps, now.getTime())) {
       return toResponse(fail(429, 'rate_limited'), cors);
     }
     return toResponse(await route.run({ request, env, ctx, deps, url, now }), cors);

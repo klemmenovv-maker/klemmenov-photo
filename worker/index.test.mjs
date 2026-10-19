@@ -5,7 +5,7 @@ import { HOLD_MINUTES, createHold, getBooking } from './bookings.mjs';
 import config from './booking-config.json' with { type: 'json' };
 import {
   makeEnv, makeCtx, makeFakes, req, validBody, complete, webhookPayload, ORIGIN, DAY, NOW, SECRETS, MemKV,
-} from './test-helpers.mjs';
+} from './_helpers.mjs';
 
 async function call(f, env, request) {
   const ctx = makeCtx();
@@ -142,6 +142,18 @@ test('rate_limit: requests without CF-Connecting-IP share the "unknown" bucket; 
   assert.equal((await call(f, env, req('GET', AVAIL, { ip: null }))).status, 200);
 });
 
+test('cors: ALLOWED_ORIGINS entries are normalised (trim, case, trailing slash, empties)', async () => {
+  const f = makeFakes();
+  const env = makeEnv({ ALLOWED_ORIGINS: ' , HTTPS://Klemmenovv-Maker.GitHub.io/ ,, https://staging.example.test/' });
+  const r = await call(f, env, req('GET', AVAIL, { origin: ORIGIN }));
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get('access-control-allow-origin'), ORIGIN);
+  const s2 = await call(f, env, req('GET', AVAIL, { origin: 'https://staging.example.test' }));
+  assert.equal(s2.headers.get('access-control-allow-origin'), 'https://staging.example.test');
+  const bad = await call(f, env, req('GET', AVAIL, { origin: 'https://evil.example' }));
+  assert.equal(bad.status, 403);
+});
+
 test('rate_limit: availability allows 60 per minute', async () => {
   const f = makeFakes();
   const env = makeEnv();
@@ -150,6 +162,62 @@ test('rate_limit: availability allows 60 per minute', async () => {
     assert.equal((await call(f, env, req('GET', '/availability?service=nope', { ip }))).status, 400);
   }
   assert.equal((await call(f, env, req('GET', '/availability?service=nope', { ip }))).status, 429);
+  // counted in memory, not in KV
+  assert.equal((await env.BOOKINGS.list({ prefix: 'rl:' })).keys.length, 0);
+  assert.equal((await call(f, env, req('GET', '/availability?service=nope', { ip: '198.51.100.2' }))).status, 400);
+  f.nowIso = '2026-10-19T10:01:00+04:00';
+  assert.equal((await call(f, env, req('GET', '/availability?service=nope', { ip }))).status, 400);
+});
+
+const kvFailingOnRl = (env, method) => {
+  const orig = env.BOOKINGS[method].bind(env.BOOKINGS);
+  env.BOOKINGS[method] = async (key, ...rest) => {
+    if (String(key).startsWith('rl:')) throw new Error('KV write limit exceeded');
+    return orig(key, ...rest);
+  };
+};
+
+test('rate_limit: KV counter failure fails open (request served, not 500)', async () => {
+  for (const method of ['put', 'get']) {
+    const f = makeFakes();
+    const env = makeEnv();
+    kvFailingOnRl(env, method);
+    const r = await call(f, env, req('POST', '/checkout', { body: validBody() }));
+    assert.equal(r.status, 200, `${method}: ${r.text}`);
+    assert.ok(f.calls.log.some((l) => l.event === 'rate_limit_unavailable'));
+  }
+});
+
+test('rate_limit: the webhook is never limited, even when KV counter writes fail', async () => {
+  const f = makeFakes();
+  const env = makeEnv();
+  kvFailingOnRl(env, 'put');
+  for (let i = 0; i < config.rate_limit.webhook_per_min + 10; i++) {
+    const r = await call(f, env, req('POST', '/webhook/ziina', { ip: '192.0.2.50', body: webhookPayload('zi_unknown') }));
+    assert.equal(r.status, 200, `request ${i + 1}`);
+  }
+  const env2 = makeEnv();
+  for (let i = 0; i < 5; i++) await call(f, env2, req('POST', '/webhook/ziina', { ip: '192.0.2.51', body: webhookPayload('zi_unknown') }));
+  assert.equal((await env2.BOOKINGS.list({ prefix: 'rl:' })).keys.length, 0);
+});
+
+test('rate_limit: only CF-Connecting-IP counts; X-Forwarded-For is ignored', async () => {
+  const f = makeFakes();
+  const env = makeEnv();
+  for (let i = 0; i < 10; i++) {
+    const r = await call(f, env, req('POST', '/checkout', {
+      ip: '203.0.113.20', headers: { 'X-Forwarded-For': `198.18.0.${i}` }, body: validBody({ hours: 0 }),
+    }));
+    assert.equal(r.status, 400);
+  }
+  const spoofed = await call(f, env, req('POST', '/checkout', {
+    ip: '203.0.113.20', headers: { 'X-Forwarded-For': '198.18.9.9' }, body: validBody(),
+  }));
+  assert.equal(spoofed.status, 429);
+  const other = await call(f, env, req('POST', '/checkout', {
+    ip: '203.0.113.21', headers: { 'X-Forwarded-For': '203.0.113.20' }, body: validBody({ hours: 0 }),
+  }));
+  assert.equal(other.status, 400);
 });
 
 // ---- 13. booking_lookup -------------------------------------------------------------
@@ -185,7 +253,7 @@ test('booking_lookup: held, expired and paid bookings expose only public fields'
   await call(f, env, req('POST', '/webhook/ziina', { body: webhookPayload(f.lastIntentId) }));
   const paid = await call(f, env, req('GET', `/booking/${id}`));
   assert.equal(paid.json.status, 'paid');
-  assert.ok(!paid.text.includes('ev_1'));
+  assert.ok(!paid.text.includes('kb'));
 });
 
 // ---- scheduled cleanup ----------------------------------------------------------------

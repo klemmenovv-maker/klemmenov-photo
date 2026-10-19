@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { handle } from './index.mjs';
-import { makeEnv, makeCtx, makeFakes, req, validBody, START, DAY, NOW, SECRETS } from './test-helpers.mjs';
+import { makeEnv, makeCtx, makeFakes, req, validBody, START, DAY, NOW, SECRETS } from './_helpers.mjs';
 
 async function checkout(f, env, body, opts = {}) {
   const ctx = makeCtx();

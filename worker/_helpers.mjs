@@ -1,7 +1,9 @@
 // Shared test doubles (no side effects at import time).
 import * as bookings from './bookings.mjs';
 import { computeSlots } from './availability.mjs';
-import { formatPaid, formatAttention } from './telegram.mjs';
+import { formatPaid, formatAttention, formatPaymentAlert } from './telegram.mjs';
+import { eventIdFor } from './google.mjs';
+import { createMemoryLimiter } from './http.mjs';
 import { quote } from '../shared/pricing.mjs';
 import pricing from './pricing.json' with { type: 'json' };
 import config from './booking-config.json' with { type: 'json' };
@@ -108,6 +110,7 @@ export function makeFakes({ now = NOW } = {}) {
     calls,
     intents: new Map(),
     busy: [],
+    events: new Map(), // fake Google calendar: event id -> booking
     nowIso: now,
     createIntentImpl: null,
     getIntentImpl: null,
@@ -145,7 +148,13 @@ export function makeFakes({ now = NOW } = {}) {
       async createEvent(env, booking) {
         calls.createEvent.push(booking);
         if (f.createEventImpl) return f.createEventImpl(env, booking);
-        return { eventId: `ev_${calls.createEvent.length}` };
+        // Like Google: deterministic id, 409 (-> duplicate) on re-insert, and
+        // the new event shows up in free/busy.
+        const eventId = eventIdFor(booking.bookingId);
+        if (f.events.has(eventId)) return { eventId, duplicate: true };
+        f.events.set(eventId, booking);
+        f.busy.push({ start: booking.startIso, end: booking.endIso });
+        return { eventId };
       },
     },
     telegram: {
@@ -155,6 +164,7 @@ export function makeFakes({ now = NOW } = {}) {
       },
       formatPaid,
       formatAttention,
+      formatPaymentAlert,
     },
     bookings,
     computeSlots,
@@ -163,6 +173,7 @@ export function makeFakes({ now = NOW } = {}) {
     config,
     fetch: async () => { throw new Error('network is disabled in tests'); },
     log: (entry) => calls.log.push(entry),
+    memoryLimiter: createMemoryLimiter(),
   };
   return f;
 }
@@ -176,6 +187,8 @@ export const webhookPayload = (id, over = {}) => ({
   event: 'payment_intent.status.updated',
   data: { id, status: 'completed', amount: 50000, currency_code: 'AED', ...over },
 });
+
+export { eventIdFor };
 
 export async function hmacHex(secret, text) {
   const enc = new TextEncoder();

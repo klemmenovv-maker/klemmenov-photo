@@ -4,7 +4,7 @@ import {
   HOLD_MINUTES, BOOKING_PAID_RETENTION_S, createHold, getBooking, attachIntent, markPaid, markNeedsAttention,
   releaseExpired, listActiveEntries, releaseHold, updateBooking, BookingNotFound, InvalidState, IntentMismatch, NotPaid, AmountMismatch,
 } from './bookings.mjs';
-import { MemKV } from './test-helpers.mjs';
+import { MemKV } from './_helpers.mjs';
 
 const NOW = '2026-10-18T10:00:00+04:00';
 const mk = (start, end, extra = {}) => ({

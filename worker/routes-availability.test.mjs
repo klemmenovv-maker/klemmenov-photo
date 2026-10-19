@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { handle } from './index.mjs';
 import { createHold } from './bookings.mjs';
-import { makeEnv, makeCtx, makeFakes, req, DAY, NOW } from './test-helpers.mjs';
+import { makeEnv, makeCtx, makeFakes, req, DAY, NOW } from './_helpers.mjs';
 
 async function avail(f, env, query, opts = {}) {
   const res = await handle(req('GET', `/availability?${query}`, opts), env, makeCtx(), f.deps);

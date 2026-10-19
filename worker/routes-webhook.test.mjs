@@ -2,8 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { handle } from './index.mjs';
 import {
-  makeEnv, makeCtx, makeFakes, req, validBody, complete, webhookPayload, hmacHex, START, DAY, SECRETS,
-} from './test-helpers.mjs';
+  makeEnv, makeCtx, makeFakes, req, validBody, complete, webhookPayload, hmacHex, eventIdFor, START, DAY, SECRETS,
+} from './_helpers.mjs';
 
 async function call(f, env, request) {
   const ctx = makeCtx();
@@ -41,7 +41,7 @@ test('webhook: completed payment -> paid, one calendar event, one paid telegram'
   assert.equal(r.json.ok, true);
   const b = await getB(env, bookingId);
   assert.equal(b.status, 'paid');
-  assert.equal(b.calendarEventId, 'ev_1');
+  assert.equal(b.calendarEventId, eventIdFor(bookingId));
   assert.ok(b.notifiedAt);
   assert.equal(f.calls.createEvent.length, 1);
   const ev = f.calls.createEvent[0];
@@ -64,7 +64,7 @@ test('webhook: Telegram failure never changes the response', async () => {
   complete(f, intentId);
   const r = await hook(f, env, webhookPayload(intentId));
   assert.equal(r.status, 200);
-  assert.equal((await getB(env, bookingId)).calendarEventId, 'ev_1');
+  assert.equal((await getB(env, bookingId)).calendarEventId, eventIdFor(bookingId));
   assert.equal((await getB(env, bookingId)).notifiedAt, undefined);
 });
 
@@ -78,6 +78,7 @@ test('webhook_ignores_forged: unknown intent id -> 200 ignored, no lookup', asyn
   assert.equal(r.status, 200);
   assert.deepEqual(r.json, IGNORED);
   assert.equal(f.calls.getIntent.length, 0);
+  assert.equal(f.calls.notify.length, 0, 'no owner alert for an unknown intent');
 });
 
 test('webhook_ignores_forged: payload says completed but Ziina says pending -> nothing happens', async () => {
@@ -165,6 +166,39 @@ test('webhook: Ziina lookup failure -> 500 so Ziina retries; state unchanged', a
   assert.equal(r.status, 500);
   assert.deepEqual(r.json, { error: 'payment_lookup_failed' });
   assert.equal((await getB(env, bookingId)).status, 'held');
+  // the owner is told, with the booking id and no personal data
+  assert.equal(f.calls.notify.length, 1);
+  assert.match(f.calls.notify[0], /Payment webhook failed/);
+  assert.match(f.calls.notify[0], /could not confirm the payment with Ziina/);
+  assert.ok(f.calls.notify[0].includes(bookingId));
+  for (const pii of ['Anna', '+97150', 'Golden', SECRETS.ziina]) assert.ok(!f.calls.notify[0].includes(pii), pii);
+});
+
+test('webhook: owner alert failure does not change the 500', async () => {
+  const f = makeFakes();
+  const env = makeEnv();
+  const { intentId } = await booked(f, env);
+  f.getIntentImpl = async () => { throw new Error('Ziina 503'); };
+  f.notifyImpl = async () => { throw new Error(`telegram down ${SECRETS.telegram}`); };
+  const r = await hook(f, env, webhookPayload(intentId));
+  assert.equal(r.status, 500);
+  assert.deepEqual(r.json, { error: 'payment_lookup_failed' });
+  assert.equal(f.calls.notify.length, 1);
+});
+
+test('webhook: unexpected error after the booking is known -> 500 internal_error and an owner alert', async () => {
+  const f = makeFakes();
+  const env = makeEnv();
+  const { bookingId, intentId } = await booked(f, env);
+  complete(f, intentId);
+  f.deps.bookings = { ...f.deps.bookings, markPaid: async () => { throw new Error(`kv exploded ${SECRETS.ziina}`); } };
+  const r = await hook(f, env, webhookPayload(intentId));
+  assert.equal(r.status, 500);
+  assert.deepEqual(r.json, { error: 'internal_error' });
+  assert.equal(f.calls.notify.length, 1);
+  assert.match(f.calls.notify[0], /unexpected error/);
+  assert.ok(f.calls.notify[0].includes(bookingId));
+  assert.ok(!f.calls.notify[0].includes(SECRETS.ziina));
 });
 
 test('webhook_ignores_forged: HMAC required when the secret is configured', async () => {
@@ -251,8 +285,9 @@ test('webhook_retry_after_crash: paid booking without calendarEventId gets its e
   const second = await hook(f, env, webhookPayload(intentId));
   assert.equal(second.status, 200);
   b = await getB(env, bookingId);
-  assert.equal(b.calendarEventId, 'ev_2');
+  assert.equal(b.calendarEventId, eventIdFor(bookingId));
   assert.equal(f.calls.createEvent.length, 2);
+  assert.equal(f.events.size, 1);
   assert.match(f.calls.notify.at(-1), /New paid booking/);
 
   // and a third delivery is a duplicate
@@ -345,4 +380,77 @@ test('webhook: slot taken after the hold expired -> attention slot_taken_after_e
   assert.equal(b.reason, 'slot_taken_after_expiry');
   assert.equal(f.calls.createEvent.length, 0);
   assert.match(f.calls.notify[0], /taken by someone else after the hold expired/);
+});
+
+// ---- cross-isolate safety (no in-isolate lock) ------------------------------------
+
+test('webhook_cross_isolate: two concurrent deliveries without the in-isolate lock -> one event, one paid telegram, no false conflict', async () => {
+  const f = makeFakes();
+  f.deps.webhookLock = (key, fn) => fn(); // simulate two isolates: no shared lock
+  const env = makeEnv();
+  const { bookingId, intentId } = await booked(f, env);
+  complete(f, intentId);
+  const rs = await Promise.all([hook(f, env, webhookPayload(intentId)), hook(f, env, webhookPayload(intentId))]);
+  assert.deepEqual(rs.map((r) => r.status), [200, 200]);
+  assert.equal(f.events.size, 1, 'exactly one calendar event exists');
+  assert.equal(f.calls.notify.filter((t) => /New paid booking/.test(t)).length, 1);
+  assert.equal(f.calls.notify.filter((t) => /Needs your attention/.test(t)).length, 0);
+  const b = await getB(env, bookingId);
+  assert.equal(b.status, 'paid');
+  assert.equal(b.calendarEventId, eventIdFor(bookingId));
+});
+
+test('webhook_crash_after_createEvent: retry stores the event id, no false conflict, no second telegram', async () => {
+  const f = makeFakes();
+  const env = makeEnv();
+  const { bookingId, intentId } = await booked(f, env);
+  complete(f, intentId);
+  // createEvent succeeds, then the Worker dies before recording calendarEventId
+  const real = f.deps.bookings.updateBooking;
+  f.deps.bookings = {
+    ...f.deps.bookings,
+    updateBooking: async (...a) => {
+      if (a[2]?.calendarEventId) throw new Error('isolate died');
+      return real(...a);
+    },
+  };
+  const first = await hook(f, env, webhookPayload(intentId));
+  assert.equal(first.status, 500);
+  assert.equal(f.events.size, 1);
+  assert.equal((await getB(env, bookingId)).calendarEventId, undefined);
+  const paidBefore = f.calls.notify.filter((t) => /New paid booking/.test(t)).length;
+
+  f.deps.bookings = { ...f.deps.bookings, updateBooking: real };
+  const retry = await hook(f, env, webhookPayload(intentId));
+  assert.equal(retry.status, 200, retry.text);
+  const b = await getB(env, bookingId);
+  assert.equal(b.status, 'paid', `reason: ${b.reason}`);
+  assert.equal(b.calendarEventId, eventIdFor(bookingId));
+  assert.equal(f.events.size, 1);
+  assert.equal(f.calls.notify.filter((t) => /Needs your attention/.test(t)).length, 0);
+  assert.equal(f.calls.notify.filter((t) => /New paid booking/.test(t)).length, paidBefore);
+});
+
+test('webhook_cross_isolate: the delivery that marks paid never mistakes the concurrent delivery\'s event for a conflict', async () => {
+  const f = makeFakes();
+  f.deps.webhookLock = (key, fn) => fn(); // two isolates
+  const env = makeEnv();
+  const { bookingId, intentId } = await booked(f, env);
+  complete(f, intentId);
+  // Worst-case timing: any free/busy read made AFTER the booking became paid
+  // is answered only once the other delivery's event exists in the calendar.
+  f.getBusyImpl = async () => {
+    const b = await env.BOOKINGS.get(`booking:${bookingId}`, 'json');
+    if (b?.status === 'paid') {
+      for (let i = 0; i < 100 && f.events.size === 0; i++) await new Promise((r) => setTimeout(r, 2));
+    }
+    return f.busy.map((x) => ({ ...x }));
+  };
+  const rs = await Promise.all([hook(f, env, webhookPayload(intentId)), hook(f, env, webhookPayload(intentId))]);
+  assert.deepEqual(rs.map((r) => r.status), [200, 200]);
+  const b = await getB(env, bookingId);
+  assert.equal(b.status, 'paid', `reason: ${b.reason}`);
+  assert.equal(f.events.size, 1);
+  assert.equal(f.calls.notify.filter((t) => /Needs your attention/.test(t)).length, 0);
+  assert.equal(f.calls.notify.filter((t) => /New paid booking/.test(t)).length, 1);
 });

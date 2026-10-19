@@ -17,6 +17,10 @@
 // propagation window can both pass step 2 (last write wins, one entry may be
 // clobbered). At single-owner volume this is very unlikely; the real upgrade
 // path is a Durable Object per day, which gives true serialisation.
+// Known limitation: createHold checks raw interval overlap only. The 30-minute
+// buffer between sessions is enforced by the slot computation in the Worker
+// routes (availability and the checkout re-check), so two checkouts racing for
+// slots closer than the buffer (but not overlapping) can both be held.
 // A booking may not span Dubai midnight (createHold throws RangeError), so the
 // single start-day index is sufficient.
 //

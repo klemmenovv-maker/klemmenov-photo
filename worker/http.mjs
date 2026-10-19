@@ -12,17 +12,22 @@ export const fail = (status, error) => reply(status, { error });
 
 // ---- CORS ----------------------------------------------------------------------
 
+// Normalised: trimmed, lowercased, trailing slashes removed, empties, "*" and
+// "null" dropped (never a wildcard).
+const normOrigin = (o) => o.trim().toLowerCase().replace(/\/+$/, '');
+
 function allowedOrigins(env) {
   return String(env?.ALLOWED_ORIGINS ?? '')
     .split(',')
-    .map((s) => s.trim())
+    .map(normOrigin)
     .filter((s) => s && s !== '*' && s !== 'null');
 }
 
-// origin: the request Origin (or null); allowed: true only for an exact match.
+// origin: the request Origin as sent (or null); allowed: exact match after
+// normalisation. The response echoes the request's own Origin.
 export function corsFor(request, env) {
   const origin = request.headers.get('Origin');
-  return { origin, allowed: origin !== null && allowedOrigins(env).includes(origin) };
+  return { origin, allowed: origin !== null && allowedOrigins(env).includes(normOrigin(origin)) };
 }
 
 function corsHeaders(cors) {
@@ -90,8 +95,7 @@ export function isJsonContentType(request) {
 // increment, so concurrent requests can undercount slightly; good enough as an
 // abuse brake, not as an exact quota.
 export async function overLimit(kv, route, request, nowMs, limit) {
-  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-  const key = `rl:${route}:${ip}:${Math.floor(nowMs / 60000)}`;
+  const key = `rl:${route}:${clientIp(request)}:${Math.floor(nowMs / 60000)}`;
   const count = Number(await kv.get(key)) || 0;
   if (count >= limit) return true;
   await kv.put(key, String(count + 1), { expirationTtl: 120 });
@@ -128,4 +132,30 @@ export function background(ctx, fn, onError) {
 // Single-line JSON log: event name, booking id and short codes only.
 export function log(entry) {
   console.log(JSON.stringify(entry));
+}
+
+// Best-effort per-isolate counter (no KV writes). Fixed one-minute windows;
+// at most `maxKeys` buckets, older minutes are dropped first.
+export function createMemoryLimiter({ maxKeys = 5000 } = {}) {
+  const buckets = new Map();
+  return {
+    hit(route, request, nowMs, limit) {
+      const minute = Math.floor(nowMs / 60000);
+      const key = `${route}:${clientIp(request)}:${minute}`;
+      const count = buckets.get(key) ?? 0;
+      if (count >= limit) return true;
+      if (!buckets.has(key) && buckets.size >= maxKeys) {
+        for (const k of buckets.keys()) if (!k.endsWith(`:${minute}`)) buckets.delete(k);
+        if (buckets.size >= maxKeys) buckets.clear();
+      }
+      buckets.set(key, count + 1);
+      return false;
+    },
+    get size() { return buckets.size; },
+  };
+}
+
+// Only Cloudflare's own header; X-Forwarded-For and friends are client-controlled.
+export function clientIp(request) {
+  return request.headers.get('CF-Connecting-IP') || 'unknown';
 }
