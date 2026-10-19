@@ -150,3 +150,21 @@ export function formatAttention(booking, reason) {
     'Please contact the client and fix the calendar manually.',
   ].join('\n');
 }
+
+const ALERTS = {
+  payment_lookup_failed: 'A payment webhook arrived, but the Worker could not confirm the payment with Ziina.',
+  internal_error: 'A payment webhook arrived, but the Worker hit an unexpected error while recording it.',
+};
+
+// Owner alert for a webhook that failed after the booking was identified. Carries
+// only the booking id and a static reason (no personal data). Unknown reasons
+// fall back to the generic text and are never echoed.
+export function formatPaymentAlert(bookingId, reason) {
+  const text = Object.hasOwn(ALERTS, reason) ? ALERTS[reason] : ALERTS.internal_error;
+  return [
+    '<b>Payment webhook failed</b>',
+    text,
+    `Booking: ${line(bookingId)}`,
+    'Ziina will retry. If no paid-booking message follows, check the payment in the Ziina dashboard.',
+  ].join('\n');
+}

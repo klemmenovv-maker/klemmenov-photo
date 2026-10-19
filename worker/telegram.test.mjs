@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { notify, formatPaid, formatAttention, TelegramError } from './telegram.mjs';
+import { notify, formatPaid, formatAttention, formatPaymentAlert, TelegramError } from './telegram.mjs';
 
 const TOKEN = '123456:DUMMY-token_abc';
 const env = { TELEGRAM_BOT_TOKEN: TOKEN, TELEGRAM_CHAT_ID: '987654' };
@@ -261,4 +261,24 @@ test('output does not depend on the process time zone', () => {
   // here we pin the expected strings, which are tz-independent by construction.
   assert.equal(when('2026-10-20T00:30:00+04:00', '2026-10-20T01:30:00+04:00'),
     'When: Tue 20 Oct 2026, 00:30-01:30 (Dubai time)');
+});
+
+// ---- formatPaymentAlert ----
+
+test('formatPaymentAlert: booking id and static human reason only', () => {
+  const id = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
+  const a = formatPaymentAlert(id, 'payment_lookup_failed').split('\n');
+  assert.equal(a[0], '<b>Payment webhook failed</b>');
+  assert.match(a[1], /could not confirm the payment with Ziina/);
+  assert.ok(a.includes(`Booking: ${id}`));
+  assert.match(a.at(-1), /Ziina dashboard/);
+  assert.match(formatPaymentAlert(id, 'internal_error'), /unexpected error/);
+});
+
+test('formatPaymentAlert escapes the id and never echoes an unknown reason', () => {
+  const s = formatPaymentAlert('<b>x</b>\nBooking: forged', '<i>free text</i>');
+  assert.ok(!s.includes('<b>x</b>'));
+  assert.ok(s.includes('&lt;b&gt;x&lt;/b&gt; Booking: forged'));
+  assert.ok(!s.includes('free text'));
+  assert.equal(s.split('\n').filter((l) => l.startsWith('Booking: ')).length, 1);
 });
