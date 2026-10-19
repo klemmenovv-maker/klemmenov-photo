@@ -165,6 +165,7 @@ export function makeFakes({ now = NOW } = {}) {
       },
     },
     google: {
+      async getResourcesBusy(env, range) { return {photographer: await this.getBusy(env, range), studio: []}; },
       async getBusy(env, range) {
         calls.getBusy.push(range);
         if (f.getBusyImpl) return f.getBusyImpl(env, range);
@@ -190,6 +191,8 @@ export function makeFakes({ now = NOW } = {}) {
     },
   };
   const overrides = {
+    // Stable historical route fixtures; owner-specific hours are tested in schedule.test.mjs.
+    config: {...defaultDeps.config,workHours:{from:"09:00",to:"20:00"},minNoticeHours:24,bufferMin:30},
     now: () => new Date(f.nowIso),
     fetch: async () => { throw new Error('network is disabled in tests'); },
     log: (entry) => calls.log.push(entry),

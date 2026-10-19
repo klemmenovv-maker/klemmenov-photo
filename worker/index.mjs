@@ -10,9 +10,10 @@ import { quote } from '../shared/pricing.mjs';
 import { computeSlots } from './availability.mjs';
 import * as bookings from './bookings.mjs';
 import { createIntent, getIntent } from './ziina.mjs';
-import { getBusy, createEvent } from './google.mjs';
+import { getBusy, createEvent, getResourcesBusy } from './google.mjs';
 import { notify, formatPaid, formatAttention, formatPaymentAlert } from './telegram.mjs';
 import { corsFor, toResponse, preflight, overLimit, createMemoryLimiter, fail, reply, log } from './http.mjs';
+import { schedule } from './routes-schedule.mjs';
 import { availability } from './routes-availability.mjs';
 import { checkout } from './routes-checkout.mjs';
 import { webhook } from './routes-webhook.mjs';
@@ -20,7 +21,7 @@ import { webhook } from './routes-webhook.mjs';
 export const defaultDeps = {
   now: () => new Date(),
   ziina: { createIntent, getIntent },
-  google: { getBusy, createEvent },
+  google: { getBusy, createEvent, getResourcesBusy },
   telegram: { notify, formatPaid, formatAttention, formatPaymentAlert },
   bookings,
   computeSlots,
@@ -55,6 +56,7 @@ async function bookingLookup({ url, env, deps, now }) {
 //            blocking Ziina's retries could lose a payment confirmation.
 // (config.rate_limit.webhook_per_min is intentionally unused.)
 const ROUTES = [
+  { path: (p) => p === '/schedule', method: 'GET', name: 'schedule', limit: ['memory', 'availability_per_min'], originCheck: true, run: schedule },
   { path: (p) => p === '/availability', method: 'GET', name: 'availability', limit: ['memory', 'availability_per_min'], originCheck: true, run: availability },
   { path: (p) => p === '/checkout', method: 'POST', name: 'checkout', limit: ['kv', 'checkout_per_min'], originCheck: true, run: checkout },
   { path: (p) => p === '/webhook/ziina', method: 'POST', name: 'webhook', limit: null, originCheck: false, run: webhook },
@@ -80,6 +82,7 @@ export async function handle(request, env, ctx, deps = defaultDeps) {
     if (request.method === 'OPTIONS') return preflight(cors);
     const url = new URL(request.url);
     const route = ROUTES.find((r) => r.path(url.pathname));
+    if (env.SCHEDULE_ONLY === 'true' && route && ['checkout','webhook'].includes(route.name)) return toResponse(fail(503,'booking_not_enabled'),cors);
     if (!route) return toResponse(fail(404, 'not_found'), cors);
     if (request.method !== route.method) return toResponse(fail(405, 'method_not_allowed'), cors);
     // A browser request from a foreign page is refused outright. No Origin

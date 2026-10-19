@@ -23,6 +23,11 @@ if API:   # live mode takes real payments: refuse to build anything unsafe
     if not TERMS:
         raise SystemExit('content.json: booking_api is set but terms_approved is false; the site must not take payments without approved terms')
     API = API.rstrip('/')
+SCHEDULE_API = (C.get('booking_schedule_api') or '').strip().rstrip('/')
+if SCHEDULE_API:
+    _s = urllib.parse.urlsplit(SCHEDULE_API)
+    if not ((_s.scheme == 'https' or (_s.scheme == 'http' and _s.hostname in ('localhost', '127.0.0.1'))) and _s.hostname and not _s.username and not _s.password and not _s.query and not _s.fragment):
+        raise SystemExit('booking_schedule_api must be an HTTPS URL (HTTP only for localhost)')
 BOOKING_CFG = json.load(open(os.path.join(ROOT, 'worker', 'booking-config.json'), encoding='utf8'))
 LANGS = ['en']   # add 'ru' back to rebuild the Russian version (strings are kept in i18n.json)
 
@@ -268,7 +273,7 @@ def book(lang):  # request mode (booking_api empty): WhatsApp message only. Live
         f'<span class="opt-s">{e(txt)}</span></label>' for qid, txt in QA.items())
     cfg = html.escape(json.dumps({'wa': C['whatsapp'], 'greeting': L['wa_text'], 'quoteLabels': B['quote_labels'],
         'hour': B['hour'], 'hours': B['hours'], 'errors': B['errors'], 'perHour': B['per_hour'], 'currency': B['summary_currency'],
-        'hoursText': B['summary_hours'], 'total': B['summary_total'], 'empty': B['summary_empty'], 'quoteWord': B['summary_quote'], 'packageNote': B['package_note'],
+        'hoursText': B['summary_hours'], 'total': B['summary_total'], 'empty': B['summary_empty'], 'quoteWord': B['summary_quote'], 'packageNote': B['package_note'], 'scheduleApi': SCHEDULE_API, 'horizonDays': BOOKING_CFG['horizonDays'],
         **({'api': API, 'horizonDays': BOOKING_CFG['horizonDays'], 'live': LV} if API else {})}, ensure_ascii=False), quote=True)
     st = B['steps']
     if API:
@@ -294,6 +299,28 @@ def book(lang):  # request mode (booking_api empty): WhatsApp message only. Live
 <div class="field"><label for="f-date">{B['date_label']}</label><input id="f-date" name="date" type="text" autocomplete="off" placeholder="{e(B['date_ph'])}"><p class="small note">{B['date_hint']}</p></div>'''
         action = f'''<a class="btn" data-request href="{wa(x, L['wa_book'])}" target="_blank" rel="noopener">{B['request_btn']}</a>
 <p class="small note">{B['request_note']}</p>'''
+    if not API:
+        step3 = '''<h2 id="h-date"><span class="n">3</span>Choose a date &amp; time</h2>
+<div class="booking-calendar" data-schedule>
+<p class="calendar-intro">Find a time for your shoot</p>
+<p class="small note">Project K requires both the photographer and the studio to be free. For another location, check the photographer’s availability.</p>
+<fieldset class="calendar-places"><legend class="sr">Shoot location</legend>
+<label><input type="radio" name="calendar-place" value="project-k" checked>Project K studio</label>
+<label><input type="radio" name="calendar-place" value="other">Another location</label></fieldset>
+<div class="calendar-duration" data-duration-control>
+<div><span class="small note">Session length</span><strong data-duration-label>Choose a shoot</strong></div>
+<div class="duration-stepper"><button type="button" data-duration-less aria-label="Shorter session">−</button><output data-duration-value>2 hours</output><button type="button" data-duration-more aria-label="Longer session">+</button></div>
+</div>
+<p class="small note calendar-rules">10:00–21:00 · Wed until 18:00 · Fri closed · Book 48 hours ahead</p>
+<div class="calendar-toolbar"><button type="button" data-month-prev aria-label="Previous month">←</button><h3 data-month-title></h3><button type="button" data-month-next aria-label="Next month">→</button></div>
+<div class="calendar-weekdays" aria-hidden="true"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+<div class="calendar-grid" data-calendar-grid role="group" aria-label="Choose a date"></div>
+<p class="small note" data-calendar-status role="status">Choose a shoot to see available times.</p>
+<button type="button" class="linkbtn" data-calendar-retry>Refresh availability</button>
+<div data-resource-times></div><p class="chosen" data-calendar-chosen aria-live="polite"></p>
+<p class="small note">Selecting a time sends a request. It does not reserve the studio or confirm a booking.</p>
+</div>
+<div class="field"><label for="f-date">Preferred date (if unavailable online)</label><input id="f-date" name="date" type="text" autocomplete="off" placeholder="e.g. Sat 14 Nov, 18:00 to 21:00"></div>'''
     t = head(x, B['title'], LV['desc'] if API else B['desc'])
     t += f'''<section class="ch-black book">
 <div class="page-head"><h1 class="rv" {fitstyle(B['h1'])}>{B['h1']}</h1></div>
@@ -526,7 +553,7 @@ def pricing_assets():  # one source of truth: content.json -> JSON for the brows
     os.makedirs(os.path.join(ROOT, 'worker'), exist_ok=True)
     for path in (os.path.join(D, 'assets', 'pricing.json'), os.path.join(ROOT, 'worker', 'pricing.json')):
         open(path, 'w', encoding='utf8').write(data)
-    for f in ('pricing.mjs', 'book-ui.mjs'):
+    for f in ('pricing.mjs', 'book-ui.mjs', 'schedule.mjs'):
         shutil.copyfile(os.path.join(ROOT, 'shared', f), os.path.join(D, 'assets', f))
 pricing_assets()
 print('built', sorted(os.listdir(D)))

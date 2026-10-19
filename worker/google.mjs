@@ -29,6 +29,7 @@ export function _resetTokenCacheForTests() { tokenCache.clear(); }
 function secretsOf(sa, extra = []) {
   const out = [...extra];
   if (sa && typeof sa === 'object') {
+    for (const k of ['client_secret', 'refresh_token']) if (sa[k]) out.push(sa[k]);
     if (typeof sa.client_email === 'string') out.push(sa.client_email);
     if (typeof sa.private_key === 'string') {
       const k = sa.private_key;
@@ -42,6 +43,10 @@ function secretsOf(sa, extra = []) {
 }
 
 function parseConfig(env) {
+  if (env?.GOOGLE_OAUTH_CLIENT_ID && env?.GOOGLE_OAUTH_CLIENT_SECRET && env?.GOOGLE_OAUTH_REFRESH_TOKEN) {
+    if (!env.GOOGLE_CALENDAR_ID) throw new GoogleError('GOOGLE_CALENDAR_ID is not configured', 0);
+    return { sa: { client_email: `oauth:${env.GOOGLE_OAUTH_CLIENT_ID}:${env.GOOGLE_OAUTH_REFRESH_TOKEN}`, oauth: true, client_id: env.GOOGLE_OAUTH_CLIENT_ID, client_secret: env.GOOGLE_OAUTH_CLIENT_SECRET, refresh_token: env.GOOGLE_OAUTH_REFRESH_TOKEN }, calendarId: String(env.GOOGLE_CALENDAR_ID) };
+  }
   if (!env || !env.GOOGLE_SA_JSON) throw new GoogleError('GOOGLE_SA_JSON is not configured', 0);
   if (!env.GOOGLE_CALENDAR_ID) throw new GoogleError('GOOGLE_CALENDAR_ID is not configured', 0);
   let sa;
@@ -114,9 +119,9 @@ async function getToken(env, sa, fetchImpl) {
   const hit = tokenCache.get(sa.client_email);
   if (hit && now < hit.expiresAt) return hit.token;
 
-  const jwt = await signJwt(sa, SCOPE, now);
+  const jwt = sa.oauth ? null : await signJwt(sa, SCOPE, now);
   const secrets = secretsOf(sa, [jwt]);
-  const body = new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: jwt }).toString();
+  const body = new URLSearchParams(sa.oauth ? { grant_type: 'refresh_token', client_id: sa.client_id, client_secret: sa.client_secret, refresh_token: sa.refresh_token } : { grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: jwt }).toString();
   const sent = await doFetch(env, fetchImpl, TOKEN_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -139,7 +144,7 @@ async function api(env, sa, url, payload, fetchImpl, retried = false) {
   const token = await getToken(env, sa, fetchImpl);
   const secrets = secretsOf(sa, [token]);
   const sent = await doFetch(env, fetchImpl, url, {
-    method: 'POST',
+    method: payload === undefined ? 'GET' : 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify(payload),
   });
@@ -240,4 +245,52 @@ export async function createEvent(env, booking, fetchImpl = fetch) {
   const { data, text, secrets } = res;
   if (!data.id) throw new GoogleError('Google event response is missing id', 200, text, secrets);
   return { eventId: data.id };
+}
+
+// A mixed shared calendar: Project K-labelled entries block the studio;
+// all other busy entries conservatively block the photographer. Never return titles.
+export function classifyBusyEvent(event) {
+  if (event.status === 'cancelled' || event.transparency === 'transparent') return null;
+  const title = String(event.summary || '');
+  const ownName = /yevhenii|евгений|женя|klemenov|klemmenov/i.test(title);
+  // Team members' days off do not mean that this photographer is unavailable.
+  if (/\b(?:day\s*off|off)\b/i.test(title) && !ownName) return null;
+  if (/(?:\broma\b|рома|ромы)/i.test(title) && !ownName && !/\bproject\s*k\b/i.test(title)) return null;
+  const studio = /\bproject\s*k\b/i.test(title);
+  // Explicit photographer identifiers can make a studio booking block both resources.
+  const photographer = !studio || ownName;
+  return { studio, photographer };
+}
+function eventInstant(value, end = false) {
+  if (value?.dateTime) return checkInstant(value.dateTime);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value?.date || '')) return `${value.date}T00:00:00+04:00`;
+  throw new GoogleError('Calendar event is missing a valid start/end', 0);
+}
+export async function getResourcesBusy(env, { from, to }, fetchImpl = fetch) {
+  const { sa, calendarId } = parseConfig(env);
+  const ranges = { photographer: [], studio: [] };
+  let pageToken;
+  const seen = new Set();
+  do {
+    const params = new URLSearchParams({timeMin: from, timeMax: to, singleEvents: 'true', maxResults: '2500', timeZone: TZ, fields: 'nextPageToken,items(summary,start,end,status,transparency)'});
+    if (pageToken) params.set('pageToken', pageToken);
+    const { data } = await api(env, sa, `${API}/calendars/${encodeURIComponent(calendarId)}/events?${params}`, undefined, fetchImpl);
+    if (!Array.isArray(data.items)) throw new GoogleError('Calendar response missing events', 0);
+    for (const event of data.items) {
+      const resource = classifyBusyEvent(event);
+      if (!resource) continue;
+      const range = { start: eventInstant(event.start), end: eventInstant(event.end) };
+      if (Date.parse(range.end) <= Date.parse(range.start)) throw new GoogleError('Invalid event interval', 0);
+      if (resource.studio) ranges.studio.push(range);
+      if (resource.photographer) ranges.photographer.push(range);
+    }
+    pageToken = data.nextPageToken;
+    if (pageToken && seen.has(pageToken)) throw new GoogleError('Calendar pagination repeated', 0);
+    if (pageToken) seen.add(pageToken);
+  } while (pageToken);
+  // Include the owner's primary calendar too, if explicitly configured.
+  if (env.GOOGLE_PERSONAL_CALENDAR_ID && env.GOOGLE_PERSONAL_CALENDAR_ID !== calendarId) {
+    ranges.photographer.push(...await getBusy({...env, GOOGLE_CALENDAR_ID: env.GOOGLE_PERSONAL_CALENDAR_ID}, {from,to}, fetchImpl));
+  }
+  return ranges;
 }
