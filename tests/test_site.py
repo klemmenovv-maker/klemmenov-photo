@@ -263,10 +263,12 @@ def _build(content, out):
                           cwd=ROOT, env=env, capture_output=True, text=True)
 
 
-def _temp_site(approved, terms=None):
+def _temp_site(approved, terms=None, api=None):
     with open(os.path.join(ROOT, "content.json"), encoding="utf-8") as f:
         content = json.load(f)
     content["terms_approved"] = approved
+    if api is not None:
+        content["booking_api"] = api
     if terms is not None:
         content["terms_text"], content["privacy_text"] = terms, terms
     tmp = tempfile.mkdtemp()
@@ -350,6 +352,108 @@ class WorkHubTests(unittest.TestCase):
             self.assertIn("terms_text", r.stderr)
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
+
+
+TERMS = [{"h": "Scope", "p": ["Test paragraph."]}]
+
+
+class LiveBookTests(unittest.TestCase):
+    def _read(self, out, *parts):
+        with open(os.path.join(out, *parts), encoding="utf-8") as f:
+            return f.read()
+
+    def test_request_mode_output_unchanged(self):
+        tmp, cpath, out = _temp_site(False, api="")
+        try:
+            r = _build(cpath, out)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual(self._read(out, "book", "index.html"),
+                             self._read(os.path.join(ROOT, "docs"), "book", "index.html"))
+            self.assertFalse(os.path.exists(os.path.join(out, "book", "thanks")))
+            self.assertFalse(os.path.exists(os.path.join(out, "book", "cancelled")))
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_live_mode_builds_pages(self):
+        import re
+        tmp, cpath, out = _temp_site(True, TERMS, api="https://booking.example.test/")
+        try:
+            r = _build(cpath, out)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            book = self._read(out, "book", "index.html")
+            m = re.search(r'data-book="([^"]*)"', book)
+            import html as h
+            cfg = json.loads(h.unescape(m.group(1)))
+            self.assertEqual(cfg["api"], "https://booking.example.test")
+            self.assertEqual(cfg["horizonDays"], 60)
+            self.assertIn("data-pay", book)
+            self.assertIn("Pay deposit", book)
+            self.assertIn("data-days", book)
+            self.assertIn("Dubai time (UTC+4)", book)
+            self.assertIn('href="../terms/"', book)
+            self.assertIn('id="f-terms"', book)
+            self.assertNotIn('id="f-date"', book)
+            self.assertIn("data-request", book)
+            self.assertIn("<noscript>", book)
+            self.assertNotIn("noindex", book)
+            for page in ("thanks", "cancelled"):
+                t = self._read(out, "book", page, "index.html")
+                self.assertIn('<meta name="robots" content="noindex">', t, page)
+                self.assertNotIn("bookbar", t, page)
+                self.assertIn('class="bar"', t, page)
+                self.assertIn("<footer>", t, page)
+                self.assertIn("https://wa.me/", t, page)
+                self.assertIn('href="../"', t, page)
+            thanks = self._read(out, "book", "thanks", "index.html")
+            m = re.search(r'data-status="([^"]*)"', thanks)
+            self.assertEqual(json.loads(h.unescape(m.group(1)))["api"], "https://booking.example.test")
+            self.assertRegex(thanks, r'<script type="module" src="\.\./\.\./assets/book-status\.mjs"></script>')
+            self.assertTrue(os.path.isfile(os.path.join(out, "assets", "book-status.mjs")))
+            sm = self._read(out, "sitemap.xml")
+            self.assertNotIn("/book/thanks/", sm)
+            self.assertNotIn("/book/cancelled/", sm)
+            self.assertEqual(check_site.check(out), [])
+            # switching back to request mode removes the live-only pages
+            with open(cpath, encoding="utf-8") as f:
+                c = json.load(f)
+            c["booking_api"] = ""
+            with open(cpath, "w", encoding="utf-8") as f:
+                json.dump(c, f)
+            r = _build(cpath, out)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertFalse(os.path.exists(os.path.join(out, "book", "thanks")))
+            self.assertFalse(os.path.exists(os.path.join(out, "book", "cancelled")))
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_live_mode_allows_localhost_http(self):
+        tmp, cpath, out = _temp_site(True, TERMS, api="http://localhost:8787")
+        try:
+            r = _build(cpath, out)
+            self.assertEqual(r.returncode, 0, r.stderr)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_live_mode_requires_approved_terms(self):
+        tmp, cpath, out = _temp_site(False, api="https://booking.example.test")
+        try:
+            r = _build(cpath, out)
+            self.assertNotEqual(r.returncode, 0)
+            self.assertIn("booking_api", r.stderr)
+            self.assertIn("terms_approved", r.stderr)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_live_mode_rejects_bad_api(self):
+        for api in ("http://booking.example.test", "ftp://x.test", "booking.example.test", "https://",
+                    "https://u:p@booking.example.test", "https://booking.example.test/?a=1", "javascript:alert(1)"):
+            tmp, cpath, out = _temp_site(True, TERMS, api=api)
+            try:
+                r = _build(cpath, out)
+                self.assertNotEqual(r.returncode, 0, api)
+                self.assertIn("booking_api", r.stderr, api)
+            finally:
+                shutil.rmtree(tmp, ignore_errors=True)
 
 
 if __name__ == "__main__":
