@@ -194,6 +194,7 @@ export function makeFakes({ now = NOW } = {}) {
     fetch: async () => { throw new Error('network is disabled in tests'); },
     log: (entry) => calls.log.push(entry),
     memoryLimiter: createMemoryLimiter(),
+    intentLimiter: createMemoryLimiter(),
   };
   f.deps = depsFrom(fake, overrides);
   return f;

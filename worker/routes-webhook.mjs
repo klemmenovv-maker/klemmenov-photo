@@ -4,6 +4,7 @@ import { fail, reply, readBody, hmacSha256Hex, safeEqual, background } from './h
 
 const EVENT = 'payment_intent.status.updated';
 const MAX_INTENT_ID = 128;
+const LOOKUPS_PER_INTENT_PER_MIN = 6;
 const IGNORED = { ok: true, ignored: true };
 const IGNORABLE = new Set(['IntentMismatch', 'NotPaid', 'BookingNotFound']);
 
@@ -129,7 +130,12 @@ async function settle(c, bookingId, intent) {
 }
 
 export async function webhook(c) {
-  const { request, env, deps } = c;
+  const { request, env, deps, now } = c;
+  // The webhook is not rate-limited, so in production it must be signed.
+  if (env.ZIINA_TEST === 'false' && !env.ZIINA_WEBHOOK_SECRET) {
+    deps.log({ event: 'webhook_not_configured' });
+    return fail(503, 'webhook_not_configured');
+  }
   const raw = await readBody(request, deps.config.max_body_bytes);
   if (!raw.ok) return fail(raw.error === 'payload_too_large' ? 413 : 400, raw.error);
 
@@ -150,6 +156,13 @@ export async function webhook(c) {
   }
   const bookingId = await env.BOOKINGS.get(`intent:${intentId}`);
   if (!bookingId) return reply(200, IGNORED);
+
+  // Cheap brake in front of Ziina: someone replaying a real intent id cannot
+  // burn the API quota or trigger a stream of owner alerts.
+  if (deps.intentLimiter.hitKey(`intent:${intentId}`, now.getTime(), LOOKUPS_PER_INTENT_PER_MIN)) {
+    deps.log({ event: 'webhook_throttled', bookingId });
+    return reply(200, { ok: true, throttled: true });
+  }
 
   // From here on a 500 means "a real booking may be paid but unrecorded":
   // Ziina retries, and the owner gets a background alert (id + reason only).

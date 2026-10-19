@@ -138,19 +138,22 @@ export function log(entry) {
 // at most `maxKeys` buckets, older minutes are dropped first.
 export function createMemoryLimiter({ maxKeys = 5000 } = {}) {
   const buckets = new Map();
+  // true when `key` is over `limit` in the current minute (and counts the hit).
+  function hitKey(key, nowMs, limit) {
+    const minute = Math.floor(nowMs / 60000);
+    const k = `${key}|${minute}`;
+    const count = buckets.get(k) ?? 0;
+    if (count >= limit) return true;
+    if (!buckets.has(k) && buckets.size >= maxKeys) {
+      for (const old of buckets.keys()) if (!old.endsWith(`|${minute}`)) buckets.delete(old);
+      if (buckets.size >= maxKeys) buckets.clear();
+    }
+    buckets.set(k, count + 1);
+    return false;
+  }
   return {
-    hit(route, request, nowMs, limit) {
-      const minute = Math.floor(nowMs / 60000);
-      const key = `${route}:${clientIp(request)}:${minute}`;
-      const count = buckets.get(key) ?? 0;
-      if (count >= limit) return true;
-      if (!buckets.has(key) && buckets.size >= maxKeys) {
-        for (const k of buckets.keys()) if (!k.endsWith(`:${minute}`)) buckets.delete(k);
-        if (buckets.size >= maxKeys) buckets.clear();
-      }
-      buckets.set(key, count + 1);
-      return false;
-    },
+    hitKey,
+    hit: (route, request, nowMs, limit) => hitKey(`${route}:${clientIp(request)}`, nowMs, limit),
     get size() { return buckets.size; },
   };
 }

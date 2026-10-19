@@ -30,6 +30,7 @@ export const defaultDeps = {
   fetch: (...args) => fetch(...args), // unbound global fetch throws "Illegal invocation" in Workers
   log,
   memoryLimiter: createMemoryLimiter(), // per isolate, best effort
+  intentLimiter: createMemoryLimiter({ maxKeys: 2000 }), // Ziina lookups per intent id
 };
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

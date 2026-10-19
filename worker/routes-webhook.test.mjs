@@ -469,3 +469,70 @@ test('webhook 500 alert uses the production formatPaymentAlert (only notify fake
   assert.ok(f.calls.notify[0].includes(bookingId));
   assert.ok(!f.calls.log.some((l) => l.event === 'telegram_failed'));
 });
+
+// ---- production gate and per-intent throttle -------------------------------------
+
+test('webhook: production (ZIINA_TEST="false") without a webhook secret refuses with 503 and never processes', async () => {
+  const f = makeFakes();
+  const env = makeEnv({ ZIINA_TEST: 'false' });
+  const { bookingId, intentId } = await booked(f, env);
+  complete(f, intentId);
+  const r = await hook(f, env, webhookPayload(intentId));
+  assert.equal(r.status, 503);
+  assert.deepEqual(r.json, { error: 'webhook_not_configured' });
+  assert.equal(f.calls.getIntent.length, 0);
+  assert.equal((await getB(env, bookingId)).status, 'held');
+  assert.ok(f.calls.log.some((l) => l.event === 'webhook_not_configured'));
+  // with the secret configured, production processes signed deliveries
+  env.ZIINA_WEBHOOK_SECRET = SECRETS.hmac;
+  const body = JSON.stringify(webhookPayload(intentId));
+  const ok = await hook(f, env, body, { 'X-Hmac-Signature': await hmacHex(SECRETS.hmac, body) });
+  assert.equal(ok.status, 200, ok.text);
+  assert.equal((await getB(env, bookingId)).status, 'paid');
+});
+
+test('webhook: test mode without a secret still processes (HMAC optional)', async () => {
+  for (const ZIINA_TEST of ['true', undefined, 'FALSE']) {
+    const f = makeFakes();
+    const env = makeEnv({ ZIINA_TEST });
+    const { bookingId, intentId } = await booked(f, env);
+    complete(f, intentId);
+    assert.equal((await hook(f, env, webhookPayload(intentId))).status, 200);
+    assert.equal((await getB(env, bookingId)).status, 'paid', String(ZIINA_TEST));
+  }
+});
+
+test('webhook: at most 6 Ziina lookups per intent per minute; then throttled without lookup or alert', async () => {
+  const f = makeFakes();
+  const env = makeEnv();
+  const { intentId } = await booked(f, env);
+  f.getIntentImpl = async () => { throw new Error('Ziina 503'); };
+  const statuses = [];
+  for (let i = 0; i < 8; i++) {
+    const r = await hook(f, env, webhookPayload(intentId));
+    statuses.push(r.status);
+    if (i >= 6) assert.deepEqual(r.json, { ok: true, throttled: true });
+  }
+  assert.deepEqual(statuses, [500, 500, 500, 500, 500, 500, 200, 200]);
+  assert.equal(f.calls.getIntent.length, 6);
+  assert.equal(f.calls.notify.length, 6, 'no alert for throttled deliveries');
+  // the window is per minute
+  f.nowIso = '2026-10-19T10:01:00+04:00';
+  f.getIntentImpl = null;
+  complete(f, intentId);
+  assert.equal((await hook(f, env, webhookPayload(intentId))).status, 200);
+  assert.equal(f.calls.getIntent.length, 7);
+});
+
+test('webhook: the per-intent throttle is per intent id', async () => {
+  const f = makeFakes();
+  const env = makeEnv();
+  const a = await booked(f, env);
+  const b = await booked(f, env, validBody({ start: `${DAY}T15:00:00+04:00` }));
+  for (let i = 0; i < 7; i++) await hook(f, env, webhookPayload(a.intentId));
+  assert.equal(f.calls.getIntent.length, 6);
+  complete(f, b.intentId);
+  const r = await hook(f, env, webhookPayload(b.intentId));
+  assert.deepEqual(r.json, { ok: true });
+  assert.equal(f.calls.getIntent.length, 7);
+});

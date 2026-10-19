@@ -1,7 +1,8 @@
 # Cloudflare Worker for the booking system.
 # Secrets are NEVER stored here. Set them with `wrangler secret put <NAME>`:
 #   ZIINA_TOKEN            Ziina API token
-#   ZIINA_WEBHOOK_SECRET   (optional) HMAC secret registered with the Ziina webhook
+#   ZIINA_WEBHOOK_SECRET   HMAC secret registered with the Ziina webhook (REQUIRED when
+#                          ZIINA_TEST = "false": the webhook answers 503 without it)
 #   TELEGRAM_BOT_TOKEN     Telegram bot token
 #   TELEGRAM_CHAT_ID       Telegram chat id of the owner
 #   GOOGLE_SA_JSON         Google service account JSON (calendar access)

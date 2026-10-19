@@ -36,7 +36,7 @@ test('defaultDeps wires every function the routes call', () => {
     for (const name of names) assert.equal(typeof defaultDeps[group]?.[name], 'function', `${group}.${name}`);
   }
   for (const name of ['now', 'computeSlots', 'quote', 'fetch', 'log']) assert.equal(typeof defaultDeps[name], 'function', name);
-  for (const name of ['memoryLimiter']) assert.equal(typeof defaultDeps[name]?.hit, 'function', name);
+  for (const name of ['memoryLimiter', 'intentLimiter']) assert.equal(typeof defaultDeps[name]?.hitKey, 'function', name);
   assert.equal(typeof defaultDeps.pricing?.services, 'object');
   assert.equal(defaultDeps.config, config);
 });
