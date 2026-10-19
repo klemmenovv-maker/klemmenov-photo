@@ -190,12 +190,14 @@ export function initLive({ root, S, el, field, lock, getQuote, getSelection, ref
       const code = e && e.code;
       errEl.textContent = friendlyError(code);
       errEl.hidden = false;
-      errEl.scrollIntoView({ block: 'nearest' }); // focus stays on Pay; the message must still be visible on small screens
+      // focus stays on Pay; the message must still be visible on small screens (also after the slot list reflows)
+      const reveal = () => errEl.scrollIntoView({ block: 'nearest' });
       if (code === 'slot_taken' || code === 'slot_unavailable' || code === 'invalid_start') {
         clearSlots();
-        fetchRange(true);
         refreshRequest();
+        fetchRange(true).then(reveal);
       }
+      reveal();
     }
     setBusy(false);
   });
