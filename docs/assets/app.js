@@ -16,8 +16,8 @@
   });
 
   // reveal: plain scroll check (no IntersectionObserver, so it also works in throttled/hidden tabs)
-  var targets = $$('.rv, .masonry a');
-  targets.forEach(function (t, i) { if (t.matches('.masonry a')) t.style.transitionDelay = ((i % 4) * 70) + 'ms'; });
+  var targets = $$('.rv, .masonry a, .pf-lead a, .pf-grid a');
+  targets.forEach(function (t, i) { if (t.matches('.masonry a, .pf-lead a, .pf-grid a')) t.style.transitionDelay = ((i % 4) * 70) + 'ms'; });
   var pending = targets.slice();
   function reveal() {
     var vh = window.innerHeight || 800;
@@ -43,7 +43,7 @@
   }
 
   // lightbox
-  var items = $$('.masonry a');
+  var items = $$('.masonry a, .pf-lead a, .pf-grid a');
   if (items.length) {
     var lb = document.createElement('div');
     lb.className = 'lb'; lb.setAttribute('role', 'dialog'); lb.setAttribute('aria-modal', 'true'); lb.setAttribute('aria-label', 'Photo viewer');
