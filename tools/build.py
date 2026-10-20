@@ -83,7 +83,7 @@ def head(x, title, desc, og='assets/og.jpg', noindex=False):
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{e(title)}</title>
 <meta name="description" content="{e(desc)}">
-{'<meta name="robots" content="noindex">' + chr(10) if noindex else ''}<meta name="theme-color" content="#0c0a09">
+{'<meta name="robots" content="noindex">' + chr(10) if noindex else ''}<meta name="theme-color" content="#120d0c">
 <link rel="canonical" href="{url}">
 {alts}
 <meta property="og:type" content="website"><meta property="og:site_name" content="Klemmenov"><meta property="og:locale" content="{"ru_RU" if x.lang=="ru" else "en_US"}">
@@ -249,7 +249,7 @@ def home(lang):
 <section class="ch-burgundy pad" id="book"><div class="wrap">
 <h2 class="rv" style="max-width:11ch">{V['book_h']}</h2>
 <p class="lead rv" style="--d:100ms;margin:28px 0 36px">{V['book_lead']}</p>
-<div class="rv" style="--d:160ms;display:flex;gap:12px;flex-wrap:wrap"><a class="btn" href="{wa(x, L['wa_book'])}">WhatsApp</a><a class="btn" style="--acc:#171310;--acc-ink:#efedea" href="{C['telegram']}">Telegram</a><a class="btn" style="--acc:#171310;--acc-ink:#efedea" href="{C['instagram']}">Instagram</a></div>
+<div class="rv" style="--d:160ms;display:flex;gap:12px;flex-wrap:wrap"><a class="btn" href="{wa(x, L['wa_book'])}">WhatsApp</a><a class="btn" style="--acc:#1b1513;--acc-ink:#f1e8df" href="{C['telegram']}">Telegram</a><a class="btn" style="--acc:#1b1513;--acc-ink:#f1e8df" href="{C['instagram']}">Instagram</a></div>
 </div></section>
 '''
     w(lang, 'index.html', t + foot(x))
@@ -401,6 +401,10 @@ def gallery_items(key):  # (set, n) of every frame in the gallery page; the hub 
         step = max(3, len(items) // (len(ext) + 1))
         for j, it in enumerate(ext):
             items.insert(min(len(items), 2 + j * (step + 1)), it)
+    order = C.get('order', {}).get(key)               # optional hand-picked rhythm for the page; frames not listed follow in file order
+    if order:
+        pos = {n: i for i, n in enumerate(order)}
+        items.sort(key=lambda it: pos.get(it[1], len(pos)) if it[0] == key else len(pos) + 1)
     return items
 
 def gallery(lang, key):
@@ -534,7 +538,7 @@ def seo():
     w('en', 'sitemap.xml', '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n' + urls + '</urlset>\n')
     w('en', 'robots.txt', f'User-agent: *\nAllow: /\nSitemap: {SITE}/sitemap.xml\n')
     w('en', '.nojekyll', '')
-    w('en', 'assets/favicon.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#0c0a09"/><text x="32" y="47" font-family="Georgia,serif" font-size="44" text-anchor="middle" fill="#c8a26b">K</text></svg>')
+    w('en', 'assets/favicon.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#120d0c"/><text x="32" y="47" font-family="Georgia,serif" font-size="44" text-anchor="middle" fill="#d2a971">K</text></svg>')
 
 for lg in LANGS:
     home(lg); work(lg); [gallery(lg, k) for k in CLS]; prices(lg); reviews(lg); contact(lg); book(lg)
