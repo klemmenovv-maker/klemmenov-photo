@@ -413,18 +413,35 @@ def gallery(lang, key):
     sv = next(h for h in hourly(x) if h['id'] == SVC[key])
     t = head(x, g['title'], g['desc'])
     word = L['ch'][key]
-    t += f'''<section class="{CLS[key]}">
+    ser = C.get('series', {}).get(key)
+    cls = 'ch-paper' if ser else CLS[key]
+    t += f'''<section class="{cls}">
 <div class="page-head"><h1 class="rv" {fitstyle(word)}>{word}</h1>
 <div class="row"><p class="lead rv" style="--d:80ms">{L['ch_lead'][key]}</p><a class="btn rv" style="--d:140ms" href="{wa(x, L['wa_shoot'] + ' ' + sv['title'] + '.')}">{L['ch_book'][key]}</a></div></div>
-<div class="masonry">
 '''
-    for i, (sk, n) in enumerate(items):
+    def tile(sk, n, i, sizes):
         m = meta(sk, n); b = f"{x.up}assets/img/{sk}/{m['id']}"
-        t += (f'<a href="{b}.webp"><img src="{b}-t.webp" srcset="{b}-t.webp 560w, {b}.webp 1200w" sizes="(min-width:1200px) 25vw, (min-width:700px) 33vw, 50vw" '
-              f'width="{m["w"]}" height="{m["h"]}" alt="{e(L["alt"][key])} {i+1}" decoding="async"{" fetchpriority=high" if i < 2 else " loading=lazy"}></a>\n')
+        return (f'<a href="{b}.webp"><img src="{b}-t.webp" srcset="{b}-t.webp 560w, {b}.webp 1200w" sizes="{sizes}" '
+                f'width="{m["w"]}" height="{m["h"]}" alt="{e(L["alt"][key])} {i+1}" decoding="async"{" fetchpriority=high" if i < 2 else " loading=lazy"}></a>\n')
+    if ser:   # 'series' layout: lead frames, then groups of frames under a quiet heading (frames keep their own proportions)
+        SL = L['series'][key]; i = 0
+        t += '<div class="pf-lead">\n'
+        for n in ser['lead']:
+            t += tile(key, n, i, '(min-width:900px) 32vw, 44vw'); i += 1
+        t += '</div>\n'
+        for g, gl in zip(ser['groups'], SL['groups']):
+            t += (f'<div class="pf-block"><div class="pf-head"><h2>{gl["title"]}</h2><p>{gl["text"]}</p>'
+                  f'<span class="pf-count">{len(g)} {SL["count"]}</span></div><div class="pf-grid">\n')
+            for n in g:
+                t += tile(key, n, i, '(min-width:900px) 30vw, 48vw'); i += 1
+            t += '</div></div>\n'
+    else:
+        t += '<div class="masonry">\n'
+        for i, (sk, n) in enumerate(items):
+            t += tile(sk, n, i, '(min-width:1200px) 25vw, (min-width:700px) 33vw, 50vw')
     others = [k for k in CLS if k != key]
     more = ''.join(f'<a class="more" href="{x.home}{k}/">{L["ch_link"][k]} <span>→</span></a>' for k in others)
-    t += f'''</div>
+    t += f'''{'' if ser else '</div>'}
 <div class="wrap" style="padding-bottom:clamp(60px,8vw,110px);display:flex;gap:clamp(20px,4vw,60px);flex-wrap:wrap">{more}<a class="more" href="../prices/">{L['nav'][2]} <span>→</span></a></div>
 </section>
 '''

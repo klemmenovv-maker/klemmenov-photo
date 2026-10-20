@@ -399,6 +399,25 @@
       "back": "Back to booking",
       "wa": "Write in WhatsApp",
       "noscript": "This page needs JavaScript to check your booking. If you paid, write in WhatsApp."
+    },
+    "series": {
+      "personal": {
+        "count": "photographs",
+        "groups": [
+          {
+            "title": "Outdoors",
+            "text": "Sea, sand and soft evening light."
+          },
+          {
+            "title": "Interiors",
+            "text": "Window light, texture and a quieter atmosphere."
+          },
+          {
+            "title": "Studio",
+            "text": "Clean portraits, shape and expressive detail."
+          }
+        ]
+      }
     }
   },
   "ru": {
@@ -635,6 +654,25 @@
           "150 AED за видео"
         ]
       ]
+    },
+    "series": {
+      "personal": {
+        "count": "кадров",
+        "groups": [
+          {
+            "title": "На улице",
+            "text": "Море, песок и мягкий вечерний свет."
+          },
+          {
+            "title": "В интерьере",
+            "text": "Свет из окна, фактура и спокойная атмосфера."
+          },
+          {
+            "title": "В студии",
+            "text": "Чистые портреты, форма и выразительная деталь."
+          }
+        ]
+      }
     }
   }
 }
