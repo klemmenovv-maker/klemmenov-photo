@@ -31,7 +31,7 @@ if SCHEDULE_API:
         raise SystemExit('booking_schedule_api must be an HTTPS URL (HTTP only for localhost)')
 BOOKING_CFG = json.load(open(os.path.join(ROOT, 'worker', 'booking-config.json'), encoding='utf8'))
 _assets = Path(ROOT) / 'docs' / 'assets'
-ASSET_VERSION = hashlib.sha256(b''.join(p.read_bytes() for p in sorted([*_assets.glob('*.mjs'), _assets / 'style.css']))).hexdigest()[:12]
+ASSET_VERSION = hashlib.sha256(b''.join(p.read_bytes() for p in sorted([*_assets.glob('*.mjs'), _assets / 'style.css', _assets / 'app.js']))).hexdigest()[:12]
 LANGS = ['en']   # add 'ru' back to rebuild the Russian version (strings are kept in i18n.json)
 
 class Ctx:  # per-page context
@@ -125,7 +125,7 @@ def foot(x):
 <div class="name" aria-hidden="true">Klemmenov</div>
 <p class="legal">© <span data-year>2026</span> Klemmenov. {L['legal']}</p>
 </footer>
-{bar}<script src="{x.up}assets/app.js" defer></script>
+{bar}<script src="{x.up}assets/app.js?v={ASSET_VERSION}" defer></script>
 </body>
 </html>
 '''
