@@ -5,6 +5,8 @@
 #                          ZIINA_TEST = "false": the webhook answers 503 without it)
 #   TELEGRAM_BOT_TOKEN     Telegram bot token
 #   TELEGRAM_CHAT_ID       Telegram chat id of the owner
+#   CRM_WEBHOOK_URL        CRM webhook (Apps Script web app URL), see REQUEST_SETUP.md
+#   CRM_WEBHOOK_SECRET     Optional shared secret sent in the webhook body
 #   GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET / GOOGLE_OAUTH_REFRESH_TOKEN
 #     Owner OAuth for the shared calendar (alternative to GOOGLE_SA_JSON).
 #   GOOGLE_SA_JSON         Google service account JSON (calendar access)

@@ -11,18 +11,21 @@ import { computeSlots } from './availability.mjs';
 import * as bookings from './bookings.mjs';
 import { createIntent, getIntent } from './ziina.mjs';
 import { getBusy, createEvent, getResourcesBusy } from './google.mjs';
-import { notify, formatPaid, formatAttention, formatPaymentAlert } from './telegram.mjs';
+import { notify, formatPaid, formatAttention, formatPaymentAlert, formatRequest } from './telegram.mjs';
+import { sendToCrm, crmConfigured } from './crm.mjs';
 import { corsFor, toResponse, preflight, overLimit, createMemoryLimiter, fail, reply, log } from './http.mjs';
 import { schedule } from './routes-schedule.mjs';
 import { availability } from './routes-availability.mjs';
 import { checkout } from './routes-checkout.mjs';
 import { webhook } from './routes-webhook.mjs';
+import { request } from './routes-request.mjs';
 
 export const defaultDeps = {
   now: () => new Date(),
   ziina: { createIntent, getIntent },
   google: { getBusy, createEvent, getResourcesBusy },
-  telegram: { notify, formatPaid, formatAttention, formatPaymentAlert },
+  telegram: { notify, formatPaid, formatAttention, formatPaymentAlert, formatRequest },
+  crm: { send: sendToCrm, configured: crmConfigured },
   bookings,
   computeSlots,
   quote,
@@ -59,6 +62,7 @@ const ROUTES = [
   { path: (p) => p === '/schedule', method: 'GET', name: 'schedule', limit: ['memory', 'availability_per_min'], originCheck: true, run: schedule },
   { path: (p) => p === '/availability', method: 'GET', name: 'availability', limit: ['memory', 'availability_per_min'], originCheck: true, run: availability },
   { path: (p) => p === '/checkout', method: 'POST', name: 'checkout', limit: ['kv', 'checkout_per_min'], originCheck: true, run: checkout },
+  { path: (p) => p === '/request', method: 'POST', name: 'request', limit: ['kv', 'request_per_min'], originCheck: true, run: request },
   { path: (p) => p === '/webhook/ziina', method: 'POST', name: 'webhook', limit: null, originCheck: false, run: webhook },
   { path: (p) => p.startsWith('/booking/'), method: 'GET', name: 'booking', limit: ['memory', 'availability_per_min'], originCheck: false, run: bookingLookup },
 ];

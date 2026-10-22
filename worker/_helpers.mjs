@@ -100,7 +100,7 @@ export function req(method, path, { body, headers = {}, ip = freshIp(), origin }
 }
 
 // Network functions that must be faked in every route test.
-const NETWORK = { ziina: 'all', google: 'all', telegram: ['notify'] };
+const NETWORK = { ziina: 'all', google: 'all', telegram: ['notify'], crm: ['send'] };
 
 // Build deps with exactly the shape of defaultDeps: same top-level keys, same
 // function names per group; network functions replaced by fakes.
@@ -128,7 +128,7 @@ export function depsFrom(fake, overrides) {
 }
 
 export function makeFakes({ now = NOW } = {}) {
-  const calls = { createIntent: [], getIntent: [], getBusy: [], createEvent: [], notify: [], log: [] };
+  const calls = { createIntent: [], getIntent: [], getBusy: [], createEvent: [], notify: [], crm: [], log: [] };
   const f = {
     calls,
     intents: new Map(),
@@ -140,6 +140,7 @@ export function makeFakes({ now = NOW } = {}) {
     getBusyImpl: null,
     createEventImpl: null,
     notifyImpl: null,
+    crmImpl: null,
     lastIntentId: null,
   };
   let n = 0;
@@ -181,6 +182,12 @@ export function makeFakes({ now = NOW } = {}) {
         f.events.set(eventId, booking);
         f.busy.push({ start: booking.startIso, end: booking.endIso });
         return { eventId };
+      },
+    },
+    crm: {
+      async send(env, record) {
+        calls.crm.push(record);
+        if (f.crmImpl) return f.crmImpl(env, record);
       },
     },
     telegram: {
