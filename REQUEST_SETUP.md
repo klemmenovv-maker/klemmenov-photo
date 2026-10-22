@@ -8,6 +8,7 @@ Worker принимает `POST /request` (без оплаты), считает 
 1. В Telegram откройте @BotFather → `/newbot` → получите токен.
 2. Напишите своему боту любое сообщение, затем откройте
    `https://api.telegram.org/bot<ТОКЕН>/getUpdates` и найдите `chat":{"id":...}` — это chat id.
+   Токен никому не пересылайте; если он попал в чат или переписку, перевыпустите: @BotFather → `/revoke`.
 3. Секреты (вводятся в терминале, значение спросит сам wrangler, нигде не светится):
    ```
    cd worker
@@ -16,30 +17,46 @@ Worker принимает `POST /request` (без оплаты), считает 
    ```
 
 ## 2. CRM — Google Таблица через Apps Script
-1. Создайте Google Таблицу, первая строка: `created | id | name | contact | service | hours | start | total AED | add-ons | to confirm | notes | status`.
-2. Расширения → Apps Script, вставьте и замените `SECRET` своей случайной строкой:
+1. Создайте Google Таблицу. В первой строке заголовки (A–J):
+   `Дата заявки | Имя | Контакт | Услуга | Дата и время съёмки | Комментарий | Статус | Сумма AED | Допы | ID`
+2. Расширения → Apps Script. Удалите всё, вставьте код ниже, замените `ЗАМЕНИТЕ_НА_СЛУЧАЙНУЮ_СТРОКУ` своей длинной случайной строкой (запомните её: это `CRM_WEBHOOK_SECRET`).
    ```js
-   const SECRET = 'SECRET';
+   const SECRET = 'ЗАМЕНИТЕ_НА_СЛУЧАЙНУЮ_СТРОКУ';
+   const TZ = 'Asia/Dubai';
+   const fmt = (iso) => iso ? Utilities.formatDate(new Date(iso), TZ, 'dd.MM.yyyy HH:mm') : 'не выбрано';
    function doPost(e) {
      const d = JSON.parse(e.postData.contents);
      if (d.secret !== SECRET) return out({ ok: false });
-     SpreadsheetApp.getActiveSheet().appendRow([d.createdAt, d.id, d.name, d.contact,
-       d.serviceLabel, d.hours, d.start || '', d.totalAed, (d.addons || []).join(', '),
-       (d.quoteOnly || []).join(', '), d.notes, d.status]);
+     SpreadsheetApp.getActiveSheet().appendRow([
+       fmt(d.createdAt), d.name, d.contact,
+       d.serviceLabel + (d.hours ? ', ' + d.hours + ' ч' : ''),
+       fmt(d.start), d.notes || '', 'новая', d.totalAed,
+       (d.addons || []).concat(d.quoteOnly || []).join(', '), d.id]);
      return out({ ok: true });
    }
    const out = (o) => ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
    ```
-3. Развернуть → Новое развёртывание → Веб-приложение, доступ «Все». Скопируйте URL.
-4. Секреты Worker:
+3. Развернуть → Новое развёртывание → тип «Веб-приложение»; «Выполнять от имени: я», «Доступ: Все» → Развернуть, разрешите доступ к таблице. Скопируйте URL (оканчивается на `/exec`).
+   После любой правки скрипта нужно «Управление развёртываниями → Изменить → Новая версия».
+4. Секреты Worker (wrangler сам спросит значение, в чат и в команды ничего вписывать не нужно):
    ```
-   npx wrangler secret put CRM_WEBHOOK_URL
-   npx wrangler secret put CRM_WEBHOOK_SECRET
+   cd worker
+   npx wrangler secret put CRM_WEBHOOK_URL      # URL из шага 3
+   npx wrangler secret put CRM_WEBHOOK_SECRET   # строка SECRET из скрипта
    ```
-   Подойдёт и любой другой вебхук (Zapier, Make, amoCRM/Bitrix24 через них): `CRM_WEBHOOK_SECRET` необязателен.
+   Подойдёт и другой вебхук (Zapier, Make и т.д.); `CRM_WEBHOOK_SECRET` необязателен.
 
 ## 3. Включение
-`wrangler deploy` (только по явному решению владельца). Проверка:
+Выполняет владелец сам, в своём терминале (после `wrangler login`):
+```
+cd worker
+npx wrangler secret put TELEGRAM_BOT_TOKEN
+npx wrangler secret put TELEGRAM_CHAT_ID
+npx wrangler secret put CRM_WEBHOOK_URL
+npx wrangler secret put CRM_WEBHOOK_SECRET
+npx wrangler deploy
+```
+Проверка:
 ```
 curl -X POST https://klemmenov-booking.white-term-cd13.workers.dev/request \
   -H 'Content-Type: application/json' \
@@ -48,8 +65,23 @@ curl -X POST https://klemmenov-booking.white-term-cd13.workers.dev/request \
 Ожидаем `{"ok":true,...}`, строку в таблице и сообщение в Telegram.
 Лимит: 3 заявки в минуту с одного IP; повтор той же заявки в течение 10 минут игнорируется.
 
-## Что ещё не подключено
-Форма на `/book/` пока отправляет только в WhatsApp: её переделывает ветка `booking-redesign`.
-Готов клиент `shared/request-client.mjs` (`submitRequest`, не бросает исключений, при сбое
-возвращает `fallback: "whatsapp"`); нужно вызвать его из новой формы и поле-ловушку `website`
-(скрытое, пустое) добавить в тело запроса.
+## Подключение формы /book/ (после merge ветки booking-redesign)
+Форма не менялась. Когда новая форма будет в main, подключение такое:
+1. В `content.json` уже есть `booking_schedule_api` (адрес Worker); передать его в конфиг формы как `requestApi`.
+2. В форму добавить скрытое поле-ловушку `<input name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="hp">` (прятать через CSS `position:absolute;left:-9999px`, не `display:none`) и чекбокс согласия, если включены условия.
+3. По кнопке «Отправить заявку»:
+   ```js
+   import { submitRequest } from '../../shared/request-client.mjs'; // скопировать в docs/assets при сборке, как book-ui.mjs
+   const r = await submitRequest(cfg.requestApi, {
+     serviceId, hours, addons,            // как в расчёте цены
+     start,                                // ISO вида 2026-11-14T18:00:00+04:00, можно не передавать
+     contact: { name, reach },
+     notes, accepted_terms: termsChecked,
+     website: form.website.value,          // ловушка, у людей пусто
+   });
+   if (r.ok) показать «Заявка отправлена, свяжусь с вами»;
+   else if (r.fallback === 'whatsapp') показать r.message и кнопку WhatsApp (текущая ссылка);
+   else показать r.message рядом с формой;
+   ```
+4. Сборка `tools/build.py` должна копировать `shared/request-client.mjs` в `docs/assets/` и включать его в хэш `ASSET_VERSION`, как остальные модули.
+5. Деплой сайта (push в main) только после деплоя Worker и проверки curl выше.
