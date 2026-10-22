@@ -172,3 +172,23 @@ export function formatPaymentAlert(bookingId, reason) {
     'Ziina will retry. If no paid-booking message follows, check the payment in the Ziina dashboard.',
   ].join('\n');
 }
+
+// Owner message for a non-binding request from the site form (no payment yet).
+export function formatRequest(r, crmFailed = false) {
+  const x = r || {};
+  const out = [
+    '<b>New booking request</b>',
+    `Service: ${line(x.serviceLabel)}${x.hours ? `, ${num(x.hours)} h` : ''}`,
+    x.start ? `Preferred time: ${formatWhen(x.start, null)}` : 'Preferred time: not chosen',
+    `Name: ${line(x.name)}`,
+    `Contact: ${line(x.contact)}`,
+    `Estimated total: ${num(x.totalAed)} AED`,
+  ];
+  for (const a of Array.isArray(x.addons) ? x.addons : []) out.push(`Add-on: ${line(a)}`);
+  for (const item of Array.isArray(x.quoteOnly) ? x.quoteOnly : []) out.push(`To confirm: ${line(item)}`);
+  const notes = block(x.notes, MAX_NOTES);
+  if (notes) out.push(`Notes: ${notes}`);
+  out.push(`Request: ${line(x.id)}`);
+  if (crmFailed) out.push('CRM did not receive this request: please add it manually.');
+  return out.join('\n');
+}

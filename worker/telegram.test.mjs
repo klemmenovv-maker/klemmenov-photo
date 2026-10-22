@@ -282,3 +282,17 @@ test('formatPaymentAlert escapes the id and never echoes an unknown reason', () 
   assert.ok(!s.includes('free text'));
   assert.equal(s.split('\n').filter((l) => l.startsWith('Booking: ')).length, 1);
 });
+
+test('formatRequest: escapes user text, shows total and the CRM warning', async () => {
+  const { formatRequest } = await import('./telegram.mjs');
+  const r = { id: 'r1', serviceLabel: 'Events', hours: 3, start: '2026-10-25T18:00:00+04:00', name: '<b>Eve</b>', contact: '@eve_k', totalAed: 5200, addons: ['Makeup'], quoteOnly: ['drone'], notes: 'a & b' };
+  const t = formatRequest(r, true);
+  assert.match(t, /New booking request/);
+  assert.match(t, /Sun 25 Oct 2026, 18:00 \(Dubai time\)/);
+  assert.match(t, /&lt;b&gt;Eve&lt;\/b&gt;/);
+  assert.match(t, /Estimated total: 5200 AED/);
+  assert.match(t, /Add-on: Makeup/);
+  assert.match(t, /a &amp; b/);
+  assert.match(t, /CRM did not receive/);
+  assert.doesNotMatch(formatRequest(r), /CRM did not receive/);
+});

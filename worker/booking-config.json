@@ -21,6 +21,7 @@
   },
   "rate_limit": {
     "checkout_per_min": 10,
+    "request_per_min": 3,
     "availability_per_min": 60,
     "webhook_per_min": 120
   },
