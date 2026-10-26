@@ -322,7 +322,17 @@
       },
       "terms_link": "Terms",
       "loc_need": "Please add the address.",
-      "rush_note": "Rush: priority booking and fast delivery."
+      "rush_note": "Rush: priority booking and fast delivery.",
+      "kinds": {
+        "photo": "Photoshoot",
+        "video": "Videoshoot",
+        "dayoff": "Day off",
+        "studio": "Studio",
+        "hold": "Reserved"
+      },
+      "from": "From",
+      "to": "To",
+      "time_hint": "Pick a free time in the calendar to set the start and end."
     },
     "write": {
       "id": "message",

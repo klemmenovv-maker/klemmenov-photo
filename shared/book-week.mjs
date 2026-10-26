@@ -22,9 +22,31 @@ export function cellState(data, day, h) {
   const slot = (data.days[day] || []).find((s) => s.photographer && hh(s.time) === h);
   if (slot) return { kind: 'free', start: slot.start, end: slot.end };
   const cells = (data.timeline?.[day] || []).filter((c) => hh(c.time) === h);
-  if (cells.some((c) => !c.photographerClosed && !c.photographer)) return { kind: 'busy' };
+  const busy = cells.find((c) => !c.photographerClosed && !c.photographer);
+  if (busy) return { kind: 'busy', what: busy.kind || 'photo' };
   return { kind: 'closed' };
 }
+
+// Minutes of consecutive free half-hours that begin exactly at `startIso`.
+export function freeRun(data, day, startIso) {
+  const cells = data?.timeline?.[day] || [];
+  let i = cells.findIndex((c) => c.start === startIso), run = 0;
+  if (i < 0) return 0;
+  for (; i < cells.length && cells[i].photographer && !cells[i].photographerClosed; i++) run += 30;
+  return run;
+}
+
+// Whole-hour durations a start can take: from the service minimum up to the free run (and the price list's maximum).
+export function durationOptions(runMin, minH, maxH) {
+  const out = [];
+  for (let h = minH; h <= maxH && h * 60 <= runMin; h++) out.push(h);
+  return out;
+}
+
+export const addMinutes = (iso, m) => {
+  const t = new Date(Date.parse(iso) + 4 * 3600000 + m * 60000).toISOString();
+  return `${t.slice(0, 19)}+04:00`;
+};
 
 async function init() {
   const S = JSON.parse(root.dataset.wk);
@@ -72,6 +94,43 @@ async function init() {
     return { r: quote(config, { serviceId: state.serviceId, hours: hourlyNow() ? state.hours : undefined, addons }), addons };
   }
 
+  // Time of the shoot as pickers: start and end once a free time is chosen, otherwise just the length.
+  function timeRow(sv) {
+    const row = el('div', 'trow');
+    const sel = (label, opts, value, onChange) => {
+      const wrap = el('label', 'tsel'); wrap.append(el('span', 'small', label));
+      const s = el('select');
+      for (const [v, t] of opts) { const o = el('option', '', t); o.value = v; o.selected = String(v) === String(value); s.append(o); }
+      s.addEventListener('change', () => onChange(s.value)); wrap.append(s); return wrap;
+    };
+    const sl = state.slot;
+    if (sl && state.data && !state.offline) {
+      const day = sl.start.slice(0, 10);
+      const starts = (state.data.days[day] || []).filter((x) => x.photographer);
+      const run = freeRun(state.data, day, sl.start);
+      const opts = durationOptions(run, sv.min, config.max_hours);
+      const hrs = Math.max(sv.min, Math.min(state.hours, opts.length ? opts[opts.length - 1] : sv.min));
+      row.append(
+        sel(I.from, starts.map((x) => [x.start, x.time]), sl.start, (v) => pickStart(day, v)),
+        sel(I.to, (opts.length ? opts : [sv.min]).map((h) => [h, addMinutes(sl.start, h * 60).slice(11, 16)]), hrs, (v) => { state.hours = Number(v); setSlot(sl.start); }),
+      );
+    } else {
+      const all = Array.from({ length: config.max_hours - sv.min + 1 }, (_, i) => sv.min + i);
+      row.append(sel(I.hours, all.map((h) => [h, `${h} ${h === 1 ? I.hour_w : I.hours_w}`]), state.hours, (v) => { state.hours = Number(v); renderCard(); }));
+      if (!state.offline) row.append(el('span', 'small note', I.time_hint));
+    }
+    return row;
+  }
+  // choose a start: the shoot gets the current length, cut down to the free time that is left
+  function setSlot(start) {
+    const day = start.slice(0, 10), sv = svc();
+    const opts = durationOptions(freeRun(state.data, day, start), sv.min, config.max_hours);
+    if (opts.length) state.hours = Math.min(Math.max(state.hours, sv.min), opts[opts.length - 1]);
+    state.slot = { start, end: addMinutes(start, state.hours * 60) };
+    renderGrid(); renderCard();
+  }
+  const pickStart = (day, start) => setSlot(start);
+
   function renderCard() {
     const sv = svc(), info = S.info[state.serviceId];
     const { r } = result();
@@ -82,15 +141,8 @@ async function init() {
     const price = el('p', 'wk-price');
     if (r.ok) { price.append(formatAed(r.total), el('small', '', I.aed)); } else price.append(el('span', 'err small', I.errors[r.error] || I.errors.unknown_service));
     const parts = [head, price];
-    if (hourlyNow()) {
-      const row = el('div', 'hrow'); const st = el('div', 'stepper'); st.setAttribute('role', 'group'); st.setAttribute('aria-label', I.hours);
-      const minus = el('button', '', '−'), plus = el('button', '', '+'), out = el('output', '', `${state.hours} ${state.hours === 1 ? I.hour_w : I.hours_w}`);
-      minus.type = plus.type = 'button'; minus.setAttribute('aria-label', I.less); plus.setAttribute('aria-label', I.more);
-      lock(minus, state.hours <= sv.min); lock(plus, state.hours >= config.max_hours);
-      minus.onclick = () => { if (state.hours > sv.min) { state.hours--; state.slot = null; renderCard(); load(); } };
-      plus.onclick = () => { if (state.hours < config.max_hours) { state.hours++; state.slot = null; renderCard(); load(); } };
-      st.append(minus, out, plus); row.append(el('span', 'small', I.hours), st); parts.push(row);
-    } else parts.push(el('p', 'small note', `${I.per_pkg} · ${I.pkg_note}`));
+    if (hourlyNow()) parts.push(timeRow(sv));
+    else parts.push(el('p', 'small note', `${I.per_pkg} · ${I.pkg_note}`));
     const ul = el('ul', 'wk-lines'); info.lines.forEach((l) => ul.append(el('li', '', l))); parts.push(ul);
     card.replaceChildren(...parts);
     syncExtras(); renderRequest();
@@ -134,7 +186,9 @@ async function init() {
           n = el('button', 'wk-c free'); n.type = 'button';
           n.setAttribute('aria-label', I.free_aria.replace('{when}', `${I.days[days.indexOf(d)]} ${Number(d.slice(8))} ${I.months[Number(d.slice(5, 7)) - 1]}, ${String(h).padStart(2, '0')}:00`));
           n.setAttribute('aria-pressed', String(!!inSel));
-          n.onclick = () => { state.slot = { start: c.start, end: c.end }; renderGrid(); renderRequest(); };
+          n.onclick = () => setSlot(c.start);
+        } else if (c.kind === 'busy') {
+          n = el('div', `wk-c busy k-${c.what}`, I.kinds[c.what] || ''); n.setAttribute('aria-label', I.kinds[c.what] || I.legend[1]);
         } else n = el('div', `wk-c ${c.kind}`);
         if (inSel) { n.classList.add('sel'); if (mins(sl.start.slice(11)) >= h * 60 && mins(sl.start.slice(11)) < (h + 1) * 60) { n.classList.add('first'); n.dataset.t = sl.start.slice(11, 16); } if (c.kind !== 'free') n.setAttribute('aria-hidden', 'true'); }
         nodes.push(n);
@@ -150,7 +204,7 @@ async function init() {
     if (from > to) { state.data = { days: {}, timeline: {}, durationMin: 60 }; status.textContent = ''; renderGrid(); return; }
     status.textContent = I.loading;
     const p = new URLSearchParams({ service: state.serviceId, from, to });
-    if (hourlyNow()) p.set('hours', state.hours);
+    if (hourlyNow()) p.set('hours', svc().min);
     try {
       const res = await fetch(`${S.scheduleApi}/schedule?${p}`, { signal: AbortSignal.timeout(15000), cache: 'no-store' });
       if (!res.ok) throw new Error('unavailable');

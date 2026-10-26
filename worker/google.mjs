@@ -257,9 +257,13 @@ export function classifyBusyEvent(event) {
   if (/\b(?:day\s*off|off)\b/i.test(title) && !ownName) return null;
   if (/(?:\broma\b|рома|ромы)/i.test(title) && !ownName && !/\bproject\s*k\b/i.test(title)) return null;
   const studio = /\bproject\s*k\b/i.test(title);
+  // Only this category ever leaves the server, never the title.
+  const kind = /\b(?:day\s*off|off)\b|выходн/i.test(title) ? 'dayoff'
+    : /video|видео|reel|ролик/i.test(title) ? 'video'
+    : studio || /студи/i.test(title) ? 'studio' : 'photo';
   // Explicit photographer identifiers can make a studio booking block both resources.
   const photographer = !studio || ownName;
-  return { studio, photographer };
+  return { studio, photographer, kind };
 }
 function eventInstant(value, end = false) {
   if (value?.dateTime) return checkInstant(value.dateTime);
@@ -279,7 +283,7 @@ export async function getResourcesBusy(env, { from, to }, fetchImpl = fetch) {
     for (const event of data.items) {
       const resource = classifyBusyEvent(event);
       if (!resource) continue;
-      const range = { start: eventInstant(event.start), end: eventInstant(event.end) };
+      const range = { start: eventInstant(event.start), end: eventInstant(event.end), kind: resource.kind };
       if (Date.parse(range.end) <= Date.parse(range.start)) throw new GoogleError('Invalid event interval', 0);
       if (resource.studio) ranges.studio.push(range);
       if (resource.photographer) ranges.photographer.push(range);
