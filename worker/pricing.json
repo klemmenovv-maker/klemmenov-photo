@@ -54,6 +54,11 @@
       "label": "Video editing",
       "price": 150,
       "per": "video"
+    },
+    "rush": {
+      "label": "Rush order (priority booking and fast delivery)",
+      "price": 500,
+      "per": "shoot"
     }
   },
   "quote_addons": {

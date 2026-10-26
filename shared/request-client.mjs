@@ -1,6 +1,8 @@
 // Browser side of POST /request. Never throws: the caller shows `message` and,
 // when `fallback` is "whatsapp", offers the WhatsApp link instead of losing the visitor.
 const MESSAGES = {
+  invalid_email: 'Please check your email address.',
+  invalid_location: 'Please choose a location and add the address if needed.',
   invalid_contact: 'Please check your phone, email or @username.',
   invalid_name: 'Please enter your name.',
   invalid_start: 'Please pick a time in the future.',

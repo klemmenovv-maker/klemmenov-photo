@@ -182,6 +182,8 @@ export function formatRequest(r, crmFailed = false) {
     x.start ? `Preferred time: ${formatWhen(x.start, null)}` : 'Preferred time: not chosen',
     `Name: ${line(x.name)}`,
     `Contact: ${line(x.contact)}`,
+    ...(x.email ? [`Email: ${line(x.email)}`] : []),
+    ...(x.location ? [`Location: ${line(x.location)}${x.locationDetails ? `, ${line(x.locationDetails)}` : ''}`] : []),
     `Estimated total: ${num(x.totalAed)} AED`,
   ];
   for (const a of Array.isArray(x.addons) ? x.addons : []) out.push(`Add-on: ${line(a)}`);

@@ -50,11 +50,11 @@ test('client: request returns a private token and the client sees only their own
   assert.equal(v.status, 'new');
   for (const k of ['ownerNote', 'reminders', 'clientHash', 'contact', 'name']) assert.equal(k in v, false, k);
   // a second request from the same browser joins the same list
-  const b = await call(f, env, 'POST', '/request', { body: validBody({ contact: { name: 'Anna Client', reach: '+971500000002' }, clientToken: a.token }) });
+  const b = await call(f, env, 'POST', '/request', { body: validBody({ contact: { name: 'Anna Client', reach: '+971500000002', email: 'x@example.test' }, clientToken: a.token }) });
   assert.equal(b.json.token, a.token);
   assert.equal((await call(f, env, 'GET', '/my', { token: a.token })).json.requests.length, 2);
   // another client sees nothing of theirs
-  const other = await submit(f, env, { contact: { name: 'Bob', reach: '+971500000003' } });
+  const other = await submit(f, env, { contact: { name: 'Bob', reach: '+971500000003', email: 'x@example.test' } });
   assert.equal((await call(f, env, 'GET', '/my', { token: other.token })).json.requests.length, 1);
   assert.equal((await call(f, env, 'GET', '/my', { token: 'x'.repeat(30) })).status, 401);
   assert.equal((await call(f, env, 'GET', '/my')).status, 401);
@@ -63,7 +63,7 @@ test('client: request returns a private token and the client sees only their own
 test('client: can add details and cancel, only their own request', async () => {
   const f = makeFakes(); const env = envFor();
   const a = await submit(f, env, { start: undefined });
-  const other = await submit(f, env, { contact: { name: 'Bob', reach: '+971500000003' } });
+  const other = await submit(f, env, { contact: { name: 'Bob', reach: '+971500000003', email: 'x@example.test' } });
   const upd = await call(f, env, 'POST', `/my/requests/${a.id}`, { token: a.token, body: { start: '2026-10-25T10:00:00+04:00', notes: 'Studio please' } });
   assert.equal(upd.status, 200, JSON.stringify(upd.json));
   assert.equal(upd.json.request.start, '2026-10-25T10:00:00+04:00');
@@ -143,7 +143,7 @@ test('owner: edit, notes, message to client, reminders', async () => {
 test('reminders: manual, auto "client did not finish", and shoot soon; each sent once', async () => {
   const f = makeFakes(); const env = envFor();
   const a = await submit(f, env, { start: undefined });
-  const b = await submit(f, env, { contact: { name: 'Bob', reach: '+971500000003' } });
+  const b = await submit(f, env, { contact: { name: 'Bob', reach: '+971500000003', email: 'x@example.test' } });
   const s = await ownerSession(f, env);
   await call(f, env, 'POST', `/admin/requests/${b.id}/reminders`, { token: s, body: { at: '2026-10-19T12:00:00+04:00', text: 'Send price list' } });
   await call(f, env, 'PATCH', `/admin/requests/${b.id}`, { token: s, body: { status: 'confirmed', start: '2026-10-20T10:00:00+04:00' } });

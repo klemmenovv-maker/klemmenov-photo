@@ -115,7 +115,7 @@ test('request: rate limit allows 3 per minute per IP', async () => {
   const env = reqEnv();
   const ip = '203.0.113.9';
   for (let i = 0; i < 3; i++) {
-    const r = await send(f, env, validBody({ contact: { name: `N${i}`, reach: '+971500000001' } }), { ip });
+    const r = await send(f, env, validBody({ contact: { name: `N${i}`, reach: '+971500000001', email: 'n@example.test' } }), { ip });
     assert.equal(r.status, 200);
   }
   const r = await send(f, env, validBody(), { ip });
@@ -148,7 +148,7 @@ test('request: validation errors', async () => {
 test('request: accepts email and telegram handle contacts', async () => {
   for (const reach of ['anna@example.com', '@anna_k']) {
     const f = makeFakes();
-    const r = await send(f, reqEnv(), validBody({ contact: { name: 'Anna', reach } }));
+    const r = await send(f, reqEnv(), validBody({ contact: { name: 'Anna', reach, email: 'anna@example.test' } }));
     assert.equal(r.status, 200, reach);
   }
 });
@@ -178,4 +178,25 @@ test('request: not gated by SCHEDULE_ONLY (requests are not payments)', async ()
   assert.equal(r.status, 200);
   const co = await handle(req('POST', '/checkout', { body: validBody(), origin: ORIGIN }), reqEnv({ SCHEDULE_ONLY: 'true' }), makeCtx(), f.deps);
   assert.equal(co.status, 503);
+});
+
+test('request: email and location are required and validated; they reach the owner', async () => {
+  const f = makeFakes();
+  const bad = [
+    ['no email', { contact: { name: 'A', reach: '+971500000001' } }, 'invalid_email'],
+    ['bad email', { contact: { name: 'A', reach: '+971500000001', email: 'nope' } }, 'invalid_email'],
+    ['no location', { location: undefined }, 'invalid_location'],
+    ['unknown location', { location: { type: 'moon' } }, 'invalid_location'],
+    ['client place without address', { location: { type: 'client', details: '' } }, 'invalid_location'],
+  ];
+  for (const [name, over, error] of bad) {
+    const r = await send(f, reqEnv(), validBody(over));
+    assert.equal(r.status, 400, name); assert.equal(r.json.error, error, name);
+  }
+  const ok = await send(f, reqEnv(), validBody({ location: { type: 'client', details: 'Marina, Tower 5, apt 12' } }));
+  assert.equal(ok.status, 200, ok.text);
+  assert.equal(f.calls.crm[0].email, 'anna@example.test');
+  assert.equal(f.calls.crm[0].location, 'client');
+  assert.match(f.calls.notify[0], /Email: anna@example\.test/);
+  assert.match(f.calls.notify[0], /Location: client, Marina/);
 });

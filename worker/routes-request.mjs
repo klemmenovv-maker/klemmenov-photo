@@ -7,6 +7,8 @@ import { fail, reply, readBody, isJsonContentType, hmacSha256Hex } from './http.
 
 const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/;
 const CONTACT_RE = /^(\+?[\d\s().-]{7,}|@[A-Za-z0-9_]{4,32}|[^\s@]+@[^\s@]+\.[^\s@]{2,})$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const LOCATIONS = ['studio', 'dubai', 'client'];
 const LINK_RE = /https?:\/\/|www\./gi;
 const TOKEN_RE = /^[A-Za-z0-9_-]{16,64}$/;
 const MAX_ADDON_QTY = 1000;
@@ -22,11 +24,17 @@ function validate(body, env) {
   if (name === null || chars(name) < 1 || chars(name) > 80) return 'invalid_name';
   const reach = typeof contact.reach === 'string' ? contact.reach.trim() : null;
   if (reach === null || chars(reach) < 3 || chars(reach) > 120 || !CONTACT_RE.test(reach)) return 'invalid_contact';
+  const email = typeof contact.email === 'string' ? contact.email.trim() : null;
+  if (email === null || chars(email) > 120 || !EMAIL_RE.test(email)) return 'invalid_email';
+  const loc = body.location;
+  if (!isObj(loc) || !LOCATIONS.includes(loc.type)) return 'invalid_location';
+  const details = typeof (loc.details ?? '') === 'string' ? (loc.details ?? '').trim() : null;
+  if (details === null || chars(details) > 200 || (loc.type === 'client' && chars(details) < 3)) return 'invalid_location';
   const notes = body.notes ?? '';
   if (typeof notes !== 'string' || chars(notes) > 1000) return 'invalid_notes';
   if ((notes.match(LINK_RE) ?? []).length > 1) return 'invalid_notes'; // link spam
   if (env.REQUIRE_TERMS !== 'false' && body.accepted_terms !== true) return 'terms_not_accepted';
-  return { name, reach, notes: notes.trim() };
+  return { name, reach, email, location: loc.type, locationDetails: details, notes: notes.trim() };
 }
 
 // Optional preferred start: a real calendar time in the future. Not checked
@@ -73,7 +81,7 @@ export async function request(c) {
 
   // The same person pressing the button twice must not ping the owner twice.
   const key = await hmacSha256Hex('request-dedupe', new TextEncoder().encode(
-    [fields.name, fields.reach, q.serviceId, q.hours, when.start ?? ''].join('|').toLowerCase()));
+    [fields.name, fields.reach, fields.email, q.serviceId, q.hours, when.start ?? ''].join('|').toLowerCase()));
   const dedupeKey = `reqdup:${key}`;
   try {
     if (await env.BOOKINGS.get(dedupeKey)) return reply(200, { ok: true, duplicate: true });
@@ -88,6 +96,9 @@ export async function request(c) {
     status: 'new',
     name: fields.name,
     contact: fields.reach,
+    email: fields.email,
+    location: fields.location,
+    locationDetails: fields.locationDetails,
     serviceId: q.serviceId,
     serviceLabel,
     hours: q.hours,

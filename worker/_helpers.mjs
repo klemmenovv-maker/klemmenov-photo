@@ -80,7 +80,8 @@ export function makeCtx() {
 
 export const validBody = (over = {}) => ({
   serviceId: 'personal', hours: 2, start: START,
-  contact: { name: 'Anna Client', reach: '+971500000001' },
+  contact: { name: 'Anna Client', reach: '+971500000001', email: 'anna@example.test' },
+  location: { type: 'studio' },
   notes: 'Golden hour please', accepted_terms: true, ...over,
 });
 

@@ -239,7 +239,8 @@
         "artist": "artist",
         "person": "person",
         "photo": "photo",
-        "video": "video"
+        "video": "video",
+        "shoot": "shoot"
       },
       "unit_line": "{price} AED per {unit}",
       "qty_less": "Fewer",
@@ -255,8 +256,8 @@
       "continue": "Continue",
       "details": "Your details",
       "name": "Your name",
-      "reach": "WhatsApp or Telegram",
-      "reach_ph": "+971 or @username",
+      "reach": "Phone",
+      "reach_ph": "+971 …",
       "notes": "Notes (optional)",
       "notes_ph": "Location, occasion, anything I should know",
       "date": "Preferred date and time",
@@ -309,8 +310,19 @@
       "submitted": "Request sent. Track its status in My bookings.",
       "submit_fail": "Could not send. Use WhatsApp or Telegram instead.",
       "view_mine": "My bookings",
-      "terms_check": "I accept the terms",
-      "fill": "Please enter your name and a phone, email or @username."
+      "terms_check": "I agree that my name, phone and email are stored and used to arrange this shoot.",
+      "fill": "Please enter your name, phone and a valid email, and accept the data use.",
+      "email": "Email",
+      "location": "Location",
+      "location_d": "Address or place",
+      "locations": {
+        "studio": "Studio",
+        "dubai": "Location in Dubai (street, beach, hotel)",
+        "client": "At your place"
+      },
+      "terms_link": "Terms",
+      "loc_need": "Please add the address.",
+      "rush_note": "Rush: priority booking and fast delivery."
     },
     "write": {
       "id": "message",

@@ -184,7 +184,7 @@ def book(lang):
             for sid, sv in C['services'].items() if sv['type'] == 'hourly'}   # three shoot types; packages are not offered online
     tabs = ''.join(f'<button type="button" role="tab" id="tab-{sid}" data-service="{sid}" aria-selected="false" tabindex="-1">{e(info[sid]["name"])}</button>' for sid in info)
     fixed = ''.join(
-        f'<div class="xrow" data-addon="{aid}" data-max="{100 if aid == "extra_retouch" else 10}">'
+        f'<div class="xrow" data-addon="{aid}" data-max="{100 if aid == "extra_retouch" else 1 if aid == "rush" else 10}">'
         f'<div class="xtxt"><span class="xname" id="x-{aid}">{e(a["label"])}</span>'
         f'<span class="xunit">{e(B["unit_line"].format(price=money(a["price"], L), unit=B["units"][a["per"]]))}</span></div>'
         f'<div class="stepper" role="group" aria-labelledby="x-{aid}"><button type="button" class="minus" aria-label="{B["qty_less"]}: {e(a["label"])}">−</button>'
@@ -241,9 +241,12 @@ def book(lang):
 <h2 class="sub3" id="wk-dh" tabindex="-1">{B['details']}</h2>
 <div class="field" data-date-field hidden><label for="f-date">{B['date']}</label><input id="f-date" type="text" autocomplete="off" placeholder="{e(B['date_ph'])}"></div>
 <div class="field"><label for="f-name">{B['name']}</label><input id="f-name" type="text" autocomplete="name" maxlength="80"></div>
-<div class="field"><label for="f-reach">{B['reach']}</label><input id="f-reach" type="text" autocomplete="tel" maxlength="120" placeholder="{e(B['reach_ph'])}"></div>
+<div class="field"><label for="f-reach">{B['reach']}</label><input id="f-reach" type="tel" autocomplete="tel" maxlength="120" placeholder="{e(B['reach_ph'])}"></div>
+<div class="field"><label for="f-email">{B['email']}</label><input id="f-email" type="email" autocomplete="email" maxlength="120"></div>
+<div class="field"><label for="f-loc">{B['location']}</label><select id="f-loc">{''.join(f'<option value="{k}">{e(v)}</option>' for k, v in B['locations'].items())}</select></div>
+<div class="field" data-loc-field hidden><label for="f-loc-d">{B['location_d']}</label><input id="f-loc-d" type="text" maxlength="200" autocomplete="street-address"></div>
 <div class="field"><label for="f-notes">{B['notes']}</label><textarea id="f-notes" rows="3" maxlength="1000" placeholder="{e(B['notes_ph'])}"></textarea></div>
-{('<div class="field"><label class="opt"><input type="checkbox" id="f-terms"><span>' + B['terms_check'] + '</span></label></div>') if TERMS else ''}
+<div class="field"><label class="opt"><input type="checkbox" id="f-terms"><span>{B['terms_check']}{(' <a href="../terms/">' + B['terms_link'] + '</a>') if TERMS else ''}</span></label></div>
 <div class="actions">{('<button type="button" class="btn" data-submit>' + B['submit'] + '</button>') if SCHEDULE_API else ''}<a class="btn ghost" data-send href="{wa(x)}" target="_blank" rel="noopener">{B['send_wa']}</a><a class="btn ghost" data-send-tg href="{C['telegram']}" target="_blank" rel="noopener">{B['send_tg']}</a></div>
 <p class="small note" data-submit-status role="status"></p>
 <p class="small note">{B['note']}</p><p class="small note" data-copied role="status"></p>
