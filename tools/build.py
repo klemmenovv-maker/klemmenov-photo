@@ -215,7 +215,7 @@ def book(lang):
     legend = f'<li class="l-free">{B["legend"][0]}</li>' + ''.join(f'<li class="l-k-{k}">{v}</li>' for k, v in B['kinds'].items()) + f'<li class="l-closed">{B["legend"][2]}</li><li class="l-sel">{B["legend"][3]}</li>'
     t = head(x, B['title'], B['desc'])
     t += f'''<section class="ch-black book">
-<div class="page-head"><h1 class="rv">{B['h1']}</h1><p class="lead rv" style="--d:80ms">{B['lead']}</p></div>
+<div class="page-head"><h1 class="rv">{B['h1']}</h1><p class="lead rv" style="--d:80ms">{B['lead']}</p>{('<p class="rv" style="--d:120ms"><a class="btn ghost" href="../my/">' + B['my'] + '</a></p>') if SCHEDULE_API else ''}</div>
 <noscript><div class="wrap center"><p class="lead">{B['noscript']}</p><a class="btn" href="{wa(x)}">{B['noscript_btn']}</a></div></noscript>
 <div class="wrap wk" data-wk="{cfg}">
 <div class="wk-top">

@@ -362,3 +362,32 @@ footer .lead { margin: 0 auto; }
 .tsel select { padding: 10px 12px; background: transparent; color: inherit; border: 1px solid var(--line); border-radius: 8px; font: inherit; min-width: 96px; }
 .tsel select option { color: #25211f; }
 .acct-bar i.k-video { background: #1f4a6e; } .acct-bar i.k-dayoff { background: #6b4a3a; } .acct-bar i.k-studio { background: #1d5a52; } .acct-bar i.k-hold { background: #7a5a1d; } .acct-bar i.k-photo { background: #3d2a5c; }
+
+/* form controls: select and consent checkbox match the inputs */
+.field select { appearance: none; -webkit-appearance: none; width: 100%; min-height: 52px; padding: 14px 48px 14px 18px; color: var(--fg); border: 1px solid transparent; border-radius: 10px; font: 400 var(--fs-body)/1.4 var(--sans);
+  background: var(--tone) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1.5l6 6 6-6' fill='none' stroke='%23d2a971' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 18px center; cursor: pointer; }
+.field select:focus-visible { border-color: var(--acc); outline-offset: 0; }
+.field select option { background: #1d1816; color: #f1ece4; }
+.field .opt { display: flex; align-items: flex-start; gap: 14px; padding: 6px 0; border: 0; font-size: var(--fs-small); line-height: 1.45; }
+.field .opt input[type="checkbox"] { flex: none; width: 24px; min-height: 24px; height: 24px; margin: 1px 0 0; padding: 0; border-radius: 6px; accent-color: var(--acc); }
+.field .opt a { color: var(--acc); }
+.wk-details .actions { margin-top: 6px; }
+.wk-details .btn[data-submit] { background: var(--acc); color: var(--acc-ink); border-color: var(--acc); }
+.wk-details .btn[data-submit]:hover { background: transparent; color: var(--acc); }
+
+/* current-time line and hover preview */
+.wk-c .now { position: absolute; left: 0; right: 0; height: 0; border-top: 2px solid #e5483a; pointer-events: none; z-index: 3; }
+.wk-c .now.dot::before { content: ""; position: absolute; left: -4px; top: -5px; width: 8px; height: 8px; border-radius: 50%; background: #e5483a; }
+.wk-t .now { left: 0; right: 0; }
+.wk-c.peek { background: #f3dfb3; }
+.wk-t { position: relative; }
+
+/* phone: shoot type, then the calendar, then the price card (like the reference) */
+@media (max-width: 999px) {
+  .wk-top { display: contents; }
+  .wk-top .tabs { order: 1; } .wk-cal { order: 2; } .wk-top .wk-card { order: 3; } .wk-top .wk-extras { order: 4; } .wk-bottom { order: 5; }
+  .wk-c.busy { font-size: 9px; padding: 3px; }
+  .wk-c .now.dot::before { left: -3px; width: 6px; height: 6px; top: -4px; }
+  .trow { gap: 10px; } .tsel select { min-width: 88px; }
+  .wk-bottom .btn, .wk-details .actions .btn { width: 100%; justify-content: center; text-align: center; }
+}
