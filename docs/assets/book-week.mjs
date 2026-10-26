@@ -94,30 +94,18 @@ async function init() {
     return { r: quote(config, { serviceId: state.serviceId, hours: hourlyNow() ? state.hours : undefined, addons }), addons };
   }
 
-  // Time of the shoot as pickers: start and end once a free time is chosen, otherwise just the length.
+  // The time is set on the calendar itself (drag, or tap the start and then the end). Only without a
+  // calendar (offline) the length is a plain list.
   function timeRow(sv) {
     const row = el('div', 'trow');
-    const sel = (label, opts, value, onChange) => {
-      const wrap = el('label', 'tsel'); wrap.append(el('span', 'small', label));
+    if (state.offline) {
+      const lab = el('label', 'tsel'); lab.append(el('span', 'small', I.hours));
       const s = el('select');
-      for (const [v, t] of opts) { const o = el('option', '', t); o.value = v; o.selected = String(v) === String(value); s.append(o); }
-      s.addEventListener('change', () => onChange(s.value)); wrap.append(s); return wrap;
-    };
-    const sl = state.slot;
-    if (sl && state.data && !state.offline) {
-      const day = sl.start.slice(0, 10);
-      const starts = (state.data.days[day] || []).filter((x) => x.photographer);
-      const run = freeRun(state.data, day, sl.start);
-      const opts = durationOptions(run, sv.min, config.max_hours);
-      const hrs = Math.max(sv.min, Math.min(state.hours, opts.length ? opts[opts.length - 1] : sv.min));
-      row.append(
-        sel(I.from, starts.map((x) => [x.start, x.time]), sl.start, (v) => pickStart(day, v)),
-        sel(I.to, (opts.length ? opts : [sv.min]).map((h) => [h, addMinutes(sl.start, h * 60).slice(11, 16)]), hrs, (v) => { state.hours = Number(v); setSlot(sl.start); }),
-      );
+      for (let h = sv.min; h <= config.max_hours; h++) { const o = el('option', '', `${h} ${h === 1 ? I.hour_w : I.hours_w}`); o.value = h; o.selected = h === state.hours; s.append(o); }
+      s.addEventListener('change', () => { state.hours = Number(s.value); renderCard(); });
+      lab.append(s); row.append(lab);
     } else {
-      const all = Array.from({ length: config.max_hours - sv.min + 1 }, (_, i) => sv.min + i);
-      row.append(sel(I.hours, all.map((h) => [h, `${h} ${h === 1 ? I.hour_w : I.hours_w}`]), state.hours, (v) => { state.hours = Number(v); renderCard(); }));
-      if (!state.offline) row.append(el('span', 'small note', I.time_hint));
+      row.append(el('p', 'small note drag-hint', state.slot ? I.drag_more : I.drag_hint));
     }
     return row;
   }
@@ -195,7 +183,7 @@ async function init() {
             }
             setSlot(c.start);
           };
-          n.dataset.day = d; n.dataset.h = String(h);
+          n.dataset.day = d; n.dataset.h = String(h); n.dataset.start = c.start;
         } else if (c.kind === 'busy') {
           n = el('div', `wk-c busy k-${c.what}`, I.kinds[c.what] || ''); n.setAttribute('aria-label', I.kinds[c.what] || I.legend[1]);
         } else n = el('div', `wk-c ${c.kind}`);
@@ -229,6 +217,44 @@ async function init() {
     }
   });
   grid.addEventListener('mouseleave', () => grid.querySelectorAll('.peek').forEach((n) => n.classList.remove('peek')));
+
+  // Drag over the free hours of one day to set the start and the end in one move (mouse and pen).
+  // On a touch screen vertical drag scrolls the page, so there it is: tap the start, then tap the end.
+  let drag = null, suppressClick = false;
+  const cellAt = (x, y) => { const n = document.elementFromPoint(x, y)?.closest?.('.wk-c'); return n && n.dataset.day ? n : null; };
+  const rangeFor = (anchor, h) => {
+    const lo = Math.min(anchor.h, h), hi = Math.max(anchor.h, h), first = grid.querySelector(`.wk-c.free[data-day="${anchor.day}"][data-h="${lo}"]`);
+    if (!first) return null;
+    let hours = Math.min(hi - lo + 1, config.max_hours);
+    hours = Math.min(hours, Math.floor(freeRun(state.data, anchor.day, first.dataset.start) / 60));
+    return hours >= svc().min ? { lo, hours, start: first.dataset.start } : { lo, hours: svc().min, start: first.dataset.start };
+  };
+  const paint = (r) => {
+    grid.querySelectorAll('.peek').forEach((n) => n.classList.remove('peek'));
+    if (r) for (let k = 0; k < r.hours; k++) grid.querySelector(`.wk-c[data-day="${drag.day}"][data-h="${r.lo + k}"]`)?.classList.add('peek');
+  };
+  grid.addEventListener('pointerdown', (ev) => {
+    if (ev.pointerType === 'touch' || ev.button !== 0 || !hourlyNow() || !state.data || state.offline) return;
+    const c = ev.target.closest('.wk-c.free'); if (!c) return;
+    drag = { day: c.dataset.day, h: Number(c.dataset.h), moved: false, range: null };
+  });
+  grid.addEventListener('pointermove', (ev) => {
+    if (!drag) return;
+    const c = cellAt(ev.clientX, ev.clientY);
+    if (!c || c.dataset.day !== drag.day) return;
+    const h = Number(c.dataset.h);
+    if (h !== drag.h && !drag.moved) { drag.moved = true; grid.setPointerCapture(ev.pointerId); grid.classList.add('dragging'); }
+    if (drag.moved) { drag.range = rangeFor(drag, h); paint(drag.range); }
+  });
+  const endDrag = (commit) => {
+    const d = drag; drag = null; grid.classList.remove('dragging');
+    if (!d) return;
+    paint(null);
+    if (commit && d.moved && d.range) { suppressClick = true; state.hours = d.range.hours; setSlot(d.range.start); }
+  };
+  grid.addEventListener('pointerup', () => endDrag(true));
+  grid.addEventListener('pointercancel', () => endDrag(false));
+  grid.addEventListener('click', (ev) => { if (suppressClick) { suppressClick = false; ev.stopImmediatePropagation(); ev.preventDefault(); } }, true);
 
   async function load() {
     const id = ++seq; state.data = null; retry.hidden = true; renderGrid();
