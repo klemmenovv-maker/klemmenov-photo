@@ -186,16 +186,49 @@ async function init() {
           n = el('button', 'wk-c free'); n.type = 'button';
           n.setAttribute('aria-label', I.free_aria.replace('{when}', `${I.days[days.indexOf(d)]} ${Number(d.slice(8))} ${I.months[Number(d.slice(5, 7)) - 1]}, ${String(h).padStart(2, '0')}:00`));
           n.setAttribute('aria-pressed', String(!!inSel));
-          n.onclick = () => setSlot(c.start);
+          n.onclick = () => {
+            const sl0 = state.slot;
+            // a second tap later the same day stretches the shoot to the end of that hour, if all of it is free
+            if (sl0 && hourlyNow() && sl0.start.slice(0, 10) === d && c.start > sl0.start && state.data && !state.offline) {
+              const need = Math.ceil((mins(c.end.slice(11, 16)) - mins(sl0.start.slice(11, 16))) / 60);
+              if (need >= svc().min && need <= config.max_hours && need * 60 <= freeRun(state.data, d, sl0.start)) { state.hours = need; setSlot(sl0.start); return; }
+            }
+            setSlot(c.start);
+          };
+          n.dataset.day = d; n.dataset.h = String(h);
         } else if (c.kind === 'busy') {
           n = el('div', `wk-c busy k-${c.what}`, I.kinds[c.what] || ''); n.setAttribute('aria-label', I.kinds[c.what] || I.legend[1]);
         } else n = el('div', `wk-c ${c.kind}`);
-        if (inSel) { n.classList.add('sel'); if (mins(sl.start.slice(11)) >= h * 60 && mins(sl.start.slice(11)) < (h + 1) * 60) { n.classList.add('first'); n.dataset.t = sl.start.slice(11, 16); } if (c.kind !== 'free') n.setAttribute('aria-hidden', 'true'); }
+        if (inSel) { n.classList.add('sel'); if (mins(sl.start.slice(11)) >= h * 60 && mins(sl.start.slice(11)) < (h + 1) * 60) { n.classList.add('first'); n.dataset.t = `${sl.start.slice(11, 16)} · ${state.hours} ${I.h_short}`; } if (c.kind !== 'free') n.setAttribute('aria-hidden', 'true'); }
         nodes.push(n);
       });
     }
     grid.replaceChildren(...nodes);
+    drawNow(days);
   }
+
+  // the red line of the current time (Dubai), like a wall clock
+  function drawNow(days) {
+    const t = new Date(Date.now() + 4 * 3600000), day = t.toISOString().slice(0, 10), h = t.getUTCHours();
+    if (!days.includes(day) || h < S.openHour || h >= S.closeHour) return;
+    const row = h - S.openHour, perRow = 8;
+    const top = `${(t.getUTCMinutes() / 60) * 100}%`;
+    const cells = Array.from(grid.children).slice(perRow * (row + 1), perRow * (row + 2));
+    cells.forEach((c, i) => { const line = el('i', i === 1 + days.indexOf(day) ? 'now dot' : 'now'); line.style.top = top; line.setAttribute('aria-hidden', 'true'); c.append(line); });
+  }
+  setInterval(() => { if (document.visibilityState === 'visible' && state.data) renderGrid(); }, 60000);
+
+  // hover preview of the length that one tap would select
+  grid.addEventListener('mouseover', (ev) => {
+    grid.querySelectorAll('.peek').forEach((n) => n.classList.remove('peek'));
+    const c = ev.target.closest('.wk-c.free'); if (!c || !hourlyNow()) return;
+    for (let k = 0; k < state.hours; k++) {
+      const n = grid.querySelector(`.wk-c[data-day="${c.dataset.day}"][data-h="${Number(c.dataset.h) + k}"]`);
+      if (!n || !n.classList.contains('free')) break;
+      n.classList.add('peek');
+    }
+  });
+  grid.addEventListener('mouseleave', () => grid.querySelectorAll('.peek').forEach((n) => n.classList.remove('peek')));
 
   async function load() {
     const id = ++seq; state.data = null; retry.hidden = true; renderGrid();

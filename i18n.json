@@ -259,7 +259,7 @@
       "reach": "Phone",
       "reach_ph": "+971 …",
       "notes": "Notes (optional)",
-      "notes_ph": "Location, occasion, anything I should know",
+      "notes_ph": "Occasion, wishes, anything I should know",
       "date": "Preferred date and time",
       "date_ph": "e.g. Sat 14 Nov, 18:00 to 21:00",
       "send_wa": "Send in WhatsApp",
@@ -332,7 +332,9 @@
       },
       "from": "From",
       "to": "To",
-      "time_hint": "Pick a free time in the calendar to set the start and end."
+      "time_hint": "Pick a free time in the calendar to set the start and end.",
+      "h_short": "h",
+      "my": "My bookings"
     },
     "write": {
       "id": "message",
