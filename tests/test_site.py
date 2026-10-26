@@ -120,20 +120,63 @@ class SiteTests(unittest.TestCase):
         self.assertEqual(
             _check_html('<img src="a.webp" width="1" height="1" alt="">', ["a.webp"]), [])
 
-    def test_home_section_order(self):
-        self.assertEqual(_home().sections, ["hero", "services", "how", "work", "packages",
-                                            "reviews", "faq", "book"])
+    def test_home_structure(self):
+        h = _home()
+        self.assertEqual(h.sections, ["hero", "work", "book"])
+        work = [(href, c) for sec, href, c in h.links if sec == "work"]
+        for key in ("personal", "events", "commercial"):
+            self.assertIn(f"{key}/", [href for href, _ in work])
+        hero = [href for sec, href, c in h.links if sec == "hero" and "btn" in c.split()]
+        self.assertEqual(hero, ["work/", "book/"])
 
-    def test_service_cards_link_to_book(self):
-        hrefs = [h for sec, h, _ in _home().links if sec in ("services", "packages")]
-        for sid in ("personal", "event", "commercial", "beauty", "premium"):
-            self.assertIn(f"book/?service={sid}", hrefs)
+    def test_nav_is_main_portfolio_book(self):
+        p = _parse(os.path.join(ROOT, "docs", "index.html"))
+        self.assertEqual(p.nav, [("Main", ""), ("Portfolio", "work/"), ("Book", "book/")])
 
-    def test_home_hero_shows_from_price(self):
-        self.assertIn("1,200", "".join(_home().hero_text))
+    def test_old_pages_redirect_to_book(self):
+        for page, target in (("prices", "../book/"), ("reviews", "../book/#reviews"), ("contact", "../book/#message")):
+            t = open(os.path.join(ROOT, "docs", page, "index.html"), encoding="utf-8").read()
+            self.assertIn(f'http-equiv="refresh" content="0; url={target}"', t, page)
+            self.assertIn('rel="canonical" href="', t)
+            self.assertIn("/book/\"", t.split('rel="canonical" href="')[1][:200], page)
+            self.assertIn("noindex", t, page)
 
-    def test_home_no_duplicate_hero_cta(self):
-        self.assertEqual(_home().hero_btns, 1)
+    def test_book_page_is_week_calendar(self):
+        import html as h
+        import re
+        t = open(os.path.join(ROOT, "docs", "book", "index.html"), encoding="utf-8").read()
+        cfg = json.loads(h.unescape(re.search(r'data-wk="([^"]*)"', t).group(1)))
+        self.assertEqual(cfg["horizonDays"], 60)
+        self.assertEqual(set(cfg["info"]), {"personal", "commercial", "event"})
+        for needle in ("data-grid", "data-prev", "data-next", "data-today", 'role="tablist"', "data-continue", "data-details", "data-send"):
+            self.assertIn(needle, t)
+        self.assertEqual(t.count('role="tab"'), 3)
+        self.assertRegex(t, r'<script type="module" src="\.\./assets/book-week\.mjs\?v=[a-f0-9]+"></script>')
+        self.assertNotIn("<form class=\"book-grid\"", t)
+        self.assertTrue(os.path.exists(os.path.join(ROOT, "docs", "assets", "book-week.mjs")))
+        self.assertTrue(os.path.exists(os.path.join(ROOT, "docs", "assets", "pricing.json")))
+        for gone in ("book.mjs", "book-live.mjs", "book-schedule.mjs", "book-status.mjs"):
+            self.assertFalse(os.path.exists(os.path.join(ROOT, "docs", "assets", gone)), gone)
+
+    def test_write_me_messages_and_contacts(self):
+        import html as h
+        import re
+        import urllib.parse
+        t = open(os.path.join(ROOT, "docs", "book", "index.html"), encoding="utf-8").read()
+        i18n = json.load(open(os.path.join(ROOT, "i18n.json"), encoding="utf-8"))
+        links = [h.unescape(m) for m in re.findall(r'href="(https://wa\.me/971545377769\?text=[^"]+)"', t)]
+        for card in i18n["en"]["write"]["cards"]:
+            for lg in ("en", "ru"):
+                want = card[lg]
+                self.assertIn(want, [urllib.parse.unquote(u.split("text=", 1)[1]) for u in links], want)
+                self.assertIn(h.escape(want), t)
+        self.assertEqual(len([m for m in re.findall(r'data-copy="', t)]), 12)
+        self.assertIn('href="https://t.me/klemmenov"', t)
+        self.assertIn('href="https://www.instagram.com/klemmenov/"', t)
+        self.assertIn('href="tel:+971545377769"', t)
+        self.assertIn('id="reviews"', t)
+        self.assertIn('id="message"', t)
+        self.assertGreaterEqual(t.count("<blockquote class=\"quote\">"), 3)
 
     def test_type_scale_has_five_sizes(self):
         import re
@@ -148,70 +191,6 @@ class SiteTests(unittest.TestCase):
         tok = re.search(r"--fs-small:\s*([^;]+);", css).group(1).strip(), re.search(r"--fs-body:\s*([^;]+);", css).group(1).strip()
         self.assertEqual(tok, ("15px", "17px"))
         self.assertLessEqual(len(sizes | set(tok)), 6, sorted(sizes))
-
-    def test_mobile_book_bar_markup(self):
-        import re
-        docs = os.path.join(ROOT, "docs")
-        seen = 0
-        for dp, _, fs in os.walk(docs):
-            for f in fs:
-                if not f.endswith(".html"):
-                    continue
-                path = os.path.join(dp, f)
-                rel = os.path.relpath(path, docs)
-                html = open(path, encoding="utf-8").read()
-                bars = re.findall(r'<a class="bookbar" href="([^"]*)">([^<]*)</a>', html)
-                if rel.startswith("book" + os.sep):
-                    self.assertEqual(bars, [], rel)
-                    continue
-                seen += 1
-                self.assertEqual(len(bars), 1, rel)
-                href, text = bars[0]
-                self.assertIn("1,200 AED", text)
-                if href.startswith("http"):
-                    self.assertTrue(href.endswith("/book/"), rel)
-                else:
-                    target = os.path.normpath(os.path.join(dp, href))
-                    self.assertEqual(target, os.path.join(docs, "book"), rel)
-        self.assertGreater(seen, 5)
-
-    def test_book_placeholder_exists(self):
-        with open(os.path.join(ROOT, "docs", "book", "index.html"), encoding="utf-8") as f:
-            html = f.read()
-        self.assertIn("<h1", html)
-        self.assertIn("wa.me", html)
-
-
-    def test_book_stepper_aria_disabled_style(self):
-        css = open(os.path.join(ROOT, "docs", "assets", "style.css"), encoding="utf-8").read()
-        self.assertIn('.book .stepper button[aria-disabled="true"]', css)
-        self.assertNotIn('stepper button:disabled', css)
-        js = open(os.path.join(ROOT, "docs", "assets", "book.mjs"), encoding="utf-8").read()
-        self.assertNotIn("request.setAttribute('aria-disabled'", js)
-
-    def test_book_page_request_mode(self):
-        import json, re
-        with open(os.path.join(ROOT, "docs", "book", "index.html"), encoding="utf-8") as f:
-            html = f.read()
-        self.assertNotIn("Pay deposit", html)
-        self.assertRegex(html, r'<script type="module" src="\.\./assets/book\.mjs(?:\?v=[a-f0-9]+)?"[^>]*></script>')
-        for step in ("service", "extras", "date", "contact"):
-            self.assertIn(f'data-step="{step}"', html)
-        m = re.search(r"<noscript>(.*?)</noscript>", html, re.S)
-        self.assertIsNotNone(m)
-        self.assertIn("https://wa.me/", m.group(1))
-        self.assertNotIn("terms", html.lower().split("<main")[1].split("</main>")[0])
-        with open(os.path.join(ROOT, "content.json"), encoding="utf-8") as f:
-            self.assertEqual(json.load(f).get("booking_api"), "")
-        req = re.search(r'<a class="btn" data-request href="([^"]*)"[^>]*>', html)
-        self.assertIsNotNone(req)
-        self.assertTrue(req.group(1).startswith("https://wa.me/") and "text=" in req.group(1))
-        self.assertNotIn("aria-disabled", req.group(0))
-        self.assertIn("<script nomodule>", html)
-        self.assertIn("data-nomodule", html)
-        self.assertTrue(os.path.exists(os.path.join(ROOT, "docs", "assets", "book-ui.mjs")))
-        self.assertTrue(os.path.exists(os.path.join(ROOT, "docs", "assets", "book.mjs")))
-
 
 class _Links(HTMLParser):
     """Anchors with text, h3-card links, details count, ids, footer hrefs."""
@@ -263,12 +242,10 @@ def _build(content, out):
                           cwd=ROOT, env=env, capture_output=True, text=True)
 
 
-def _temp_site(approved, terms=None, api=None):
+def _temp_site(approved, terms=None):
     with open(os.path.join(ROOT, "content.json"), encoding="utf-8") as f:
         content = json.load(f)
     content["terms_approved"] = approved
-    if api is not None:
-        content["booking_api"] = api
     if terms is not None:
         content["terms_text"], content["privacy_text"] = terms, terms
     tmp = tempfile.mkdtemp()
@@ -281,13 +258,6 @@ def _temp_site(approved, terms=None, api=None):
 
 
 class WorkHubTests(unittest.TestCase):
-    def test_nav_work_points_to_hub(self):
-        p = _parse(os.path.join(ROOT, "docs", "index.html"))
-        self.assertEqual([t for t, _ in p.nav], ["Main", "Work", "Prices", "Reviews", "Contact"])
-        self.assertEqual(dict(p.nav)["Work"], "work/")
-        more = [h for sec, h, c in _home().links if sec == "work" and "more" in c.split()]
-        self.assertEqual(more, ["work/"])
-
     def test_work_hub_counts_match_galleries(self):
         hub = os.path.join(ROOT, "docs", "work", "index.html")
         with open(hub, encoding="utf-8") as f:
@@ -300,16 +270,6 @@ class WorkHubTests(unittest.TestCase):
             n = sum(1 for a in g.anchors if a.get("href", "").endswith(".webp"))
             self.assertGreater(n, 0)
             self.assertIn(f'data-count="{n}"', html, key)
-
-    def test_prices_has_faq_and_jump_links(self):
-        path = os.path.join(ROOT, "docs", "prices", "index.html")
-        p = _parse(path)
-        for h in ("#rates", "#packages", "#addons", "#faq"):
-            self.assertIn(h, p.hrefs)
-        for i in ("rates", "packages", "addons", "faq"):
-            self.assertIn(i, p.ids)
-        content = json.load(open(os.path.join(ROOT, "content.json"), encoding="utf-8"))
-        self.assertEqual(p.details, len(content["faq"]))
 
     def test_terms_gated(self):
         tmp, cpath, out = _temp_site(False)
@@ -352,111 +312,6 @@ class WorkHubTests(unittest.TestCase):
             self.assertIn("terms_text", r.stderr)
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
-
-
-TERMS = [{"h": "Scope", "p": ["Test paragraph."]}]
-
-
-class LiveBookTests(unittest.TestCase):
-    def _read(self, out, *parts):
-        with open(os.path.join(out, *parts), encoding="utf-8") as f:
-            return f.read()
-
-    def test_request_mode_output_unchanged(self):
-        tmp, cpath, out = _temp_site(False, api="")
-        try:
-            r = _build(cpath, out)
-            self.assertEqual(r.returncode, 0, r.stderr)
-            self.assertEqual(self._read(out, "book", "index.html"),
-                             self._read(os.path.join(ROOT, "docs"), "book", "index.html"))
-            self.assertFalse(os.path.exists(os.path.join(out, "book", "thanks")))
-            self.assertFalse(os.path.exists(os.path.join(out, "book", "cancelled")))
-        finally:
-            shutil.rmtree(tmp, ignore_errors=True)
-
-    def test_live_mode_builds_pages(self):
-        import re
-        tmp, cpath, out = _temp_site(True, TERMS, api="https://booking.example.test/")
-        try:
-            r = _build(cpath, out)
-            self.assertEqual(r.returncode, 0, r.stderr)
-            book = self._read(out, "book", "index.html")
-            m = re.search(r'data-book="([^"]*)"', book)
-            import html as h
-            cfg = json.loads(h.unescape(m.group(1)))
-            self.assertEqual(cfg["api"], "https://booking.example.test")
-            self.assertEqual(cfg["horizonDays"], 60)
-            self.assertIn("data-pay", book)
-            self.assertIn("Pay deposit", book)
-            self.assertIn("data-days", book)
-            self.assertIn("Dubai time (UTC+4)", book)
-            self.assertIn('href="../terms/"', book)
-            self.assertIn('id="f-terms"', book)
-            self.assertNotIn('id="f-date"', book)
-            self.assertIn("data-request", book)
-            self.assertIn("<noscript>", book)
-            self.assertNotIn("noindex", book)
-            for page in ("thanks", "cancelled"):
-                t = self._read(out, "book", page, "index.html")
-                self.assertIn('<meta name="robots" content="noindex">', t, page)
-                self.assertNotIn("bookbar", t, page)
-                self.assertIn('class="bar"', t, page)
-                self.assertIn("<footer>", t, page)
-                self.assertIn("https://wa.me/", t, page)
-                self.assertIn('href="../"', t, page)
-            thanks = self._read(out, "book", "thanks", "index.html")
-            m = re.search(r'data-status="([^"]*)"', thanks)
-            self.assertEqual(json.loads(h.unescape(m.group(1)))["api"], "https://booking.example.test")
-            self.assertRegex(thanks, r'<script type="module" src="\.\./\.\./assets/book-status\.mjs"></script>')
-            self.assertTrue(os.path.isfile(os.path.join(out, "assets", "book-status.mjs")))
-            self.assertIn("15 minutes", self._read(out, "book", "cancelled", "index.html"))
-            for fid, n in (("f-name", 80), ("f-reach", 120), ("f-notes", 1000)):
-                self.assertRegex(book, rf'id="{fid}"[^>]*maxlength="{n}"')
-            sm = self._read(out, "sitemap.xml")
-            self.assertNotIn("/book/thanks/", sm)
-            self.assertNotIn("/book/cancelled/", sm)
-            self.assertEqual(check_site.check(out), [])
-            # switching back to request mode removes the live-only pages
-            with open(cpath, encoding="utf-8") as f:
-                c = json.load(f)
-            c["booking_api"] = ""
-            with open(cpath, "w", encoding="utf-8") as f:
-                json.dump(c, f)
-            r = _build(cpath, out)
-            self.assertEqual(r.returncode, 0, r.stderr)
-            self.assertFalse(os.path.exists(os.path.join(out, "book", "thanks")))
-            self.assertFalse(os.path.exists(os.path.join(out, "book", "cancelled")))
-        finally:
-            shutil.rmtree(tmp, ignore_errors=True)
-
-    def test_live_mode_allows_localhost_http(self):
-        tmp, cpath, out = _temp_site(True, TERMS, api="http://localhost:8787")
-        try:
-            r = _build(cpath, out)
-            self.assertEqual(r.returncode, 0, r.stderr)
-        finally:
-            shutil.rmtree(tmp, ignore_errors=True)
-
-    def test_live_mode_requires_approved_terms(self):
-        tmp, cpath, out = _temp_site(False, api="https://booking.example.test")
-        try:
-            r = _build(cpath, out)
-            self.assertNotEqual(r.returncode, 0)
-            self.assertIn("booking_api", r.stderr)
-            self.assertIn("terms_approved", r.stderr)
-        finally:
-            shutil.rmtree(tmp, ignore_errors=True)
-
-    def test_live_mode_rejects_bad_api(self):
-        for api in ("http://booking.example.test", "ftp://x.test", "booking.example.test", "https://",
-                    "https://u:p@booking.example.test", "https://booking.example.test/?a=1", "javascript:alert(1)"):
-            tmp, cpath, out = _temp_site(True, TERMS, api=api)
-            try:
-                r = _build(cpath, out)
-                self.assertNotEqual(r.returncode, 0, api)
-                self.assertIn("booking_api", r.stderr, api)
-            finally:
-                shutil.rmtree(tmp, ignore_errors=True)
 
 
 if __name__ == "__main__":

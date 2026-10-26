@@ -1,0 +1,221 @@
+// /book/ week calendar (after the Project K studio calendar): service tabs, hours/extras card, free-time grid, request in WhatsApp.
+// Markup comes from tools/build.py; this file reads it, loads free times from the schedule API and keeps the request text current.
+import { quote } from './pricing.mjs';
+import { addDays, buildWhatsAppText, dubaiToday, formatAed, parseServiceParam, waUrl } from './book-ui.mjs';
+import { validateSchedule } from './schedule.mjs';
+
+const root = typeof document === 'undefined' ? null : document.querySelector('[data-wk]');
+
+// Monday of the week that holds `day` (YYYY-MM-DD)
+export function weekStartOf(day) {
+  const dow = new Date(`${day}T00:00:00Z`).getUTCDay();
+  return addDays(day, -((dow + 6) % 7));
+}
+const hh = (t) => Number(t.slice(0, 2));
+const mins = (t) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+
+// state of one grid cell (day, hour): 'free' (with the first start in that hour), 'busy' or 'closed'
+export function cellState(data, day, h) {
+  if (!data) return { kind: 'wait' };
+  const slot = (data.days[day] || []).find((s) => s.photographer && hh(s.time) === h);
+  if (slot) return { kind: 'free', start: slot.start, end: slot.end };
+  const cells = (data.timeline?.[day] || []).filter((c) => hh(c.time) === h);
+  if (cells.some((c) => !c.photographerClosed && !c.photographer)) return { kind: 'busy' };
+  return { kind: 'closed' };
+}
+
+async function init() {
+  const S = JSON.parse(root.dataset.wk);
+  const I = S.i;
+  const $ = (s, c = root) => c.querySelector(s);
+  const $$ = (s, c = root) => Array.from(c.querySelectorAll(s));
+  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
+  const card = $('[data-card]'), grid = $('[data-grid]'), status = $('[data-status]'), retry = $('[data-retry]');
+  const chosenEl = $('[data-chosen]'), cont = $('[data-continue]'), details = $('[data-details]'), extras = $('[data-extras]');
+  const send = $('[data-send]'), sendTg = $('[data-send-tg]'), copied = $('[data-copied]');
+  const lock = (b, on) => (on ? b.setAttribute('aria-disabled', 'true') : b.removeAttribute('aria-disabled'));
+
+  let config;
+  try {
+    const res = await fetch('../assets/pricing.json');
+    if (!res.ok) throw new Error(String(res.status));
+    config = await res.json();
+  } catch {
+    card.replaceChildren(el('p', 'err', I.price_load));
+    send.removeAttribute('hidden');
+    return;
+  }
+
+  const today = dubaiToday(Date.now());
+  const horizon = addDays(today, S.horizonDays);
+  const state = { serviceId: null, hours: 2, addons: {}, quote: new Set(), week: weekStartOf(today), slot: null, data: null, offline: false };
+  const BLOCKED = ['makeup', 'makeup_hair'];
+  const svc = () => config.services[state.serviceId];
+  const hourlyNow = () => svc().type === 'hourly';
+  let seq = 0, last = null;
+
+  function select(id) {
+    state.serviceId = id; state.slot = null;
+    const sv = svc();
+    if (sv.type === 'hourly') state.hours = Math.min(config.max_hours, Math.max(sv.min, state.hours));
+    else for (const a of BLOCKED) delete state.addons[a];
+    $$('[role=tab]').forEach((t) => { const on = t.dataset.service === id; t.setAttribute('aria-selected', on); t.tabIndex = on ? 0 : -1; });
+    extras.hidden = false;
+    renderCard(); load();
+  }
+
+  function result() {
+    const addons = { ...state.addons };
+    for (const id of state.quote) addons[id] = 1;
+    return { r: quote(config, { serviceId: state.serviceId, hours: hourlyNow() ? state.hours : undefined, addons }), addons };
+  }
+
+  function renderCard() {
+    const sv = svc(), info = S.info[state.serviceId];
+    const { r } = result();
+    const head = el('div', 'wk-card-head');
+    head.append(el('h3', '', info.name));
+    const hrs = hourlyNow() ? state.hours : (S.pkgMin[state.serviceId] || 0) / 60;
+    head.append(el('span', 'small note', hrs ? `${hrs} ${hrs === 1 ? I.hour_w : I.hours_w}` : ''));
+    const price = el('p', 'wk-price');
+    if (r.ok) { price.append(formatAed(r.total), el('small', '', I.aed)); } else price.append(el('span', 'err small', I.errors[r.error] || I.errors.unknown_service));
+    const parts = [head, price];
+    if (hourlyNow()) {
+      const row = el('div', 'hrow'); const st = el('div', 'stepper'); st.setAttribute('role', 'group'); st.setAttribute('aria-label', I.hours);
+      const minus = el('button', '', '−'), plus = el('button', '', '+'), out = el('output', '', `${state.hours} ${state.hours === 1 ? I.hour_w : I.hours_w}`);
+      minus.type = plus.type = 'button'; minus.setAttribute('aria-label', I.less); plus.setAttribute('aria-label', I.more);
+      lock(minus, state.hours <= sv.min); lock(plus, state.hours >= config.max_hours);
+      minus.onclick = () => { if (state.hours > sv.min) { state.hours--; state.slot = null; renderCard(); load(); } };
+      plus.onclick = () => { if (state.hours < config.max_hours) { state.hours++; state.slot = null; renderCard(); load(); } };
+      st.append(minus, out, plus); row.append(el('span', 'small', I.hours), st); parts.push(row);
+    } else parts.push(el('p', 'small note', `${I.per_pkg} · ${I.pkg_note}`));
+    const ul = el('ul', 'wk-lines'); info.lines.forEach((l) => ul.append(el('li', '', l))); parts.push(ul);
+    card.replaceChildren(...parts);
+    syncExtras(); renderRequest();
+  }
+
+  function syncExtras() {
+    const pkg = svc().type === 'package';
+    for (const row of $$('.xrow')) {
+      const id = row.dataset.addon, blocked = pkg && BLOCKED.includes(id), q = state.addons[id] || 0;
+      $('output', row).textContent = q;
+      lock($('.minus', row), blocked || q <= 0); lock($('.plus', row), blocked || q >= Number(row.dataset.max));
+      row.classList.toggle('off', blocked);
+    }
+  }
+
+  const rangeFmt = (a, b) => {
+    const [, ma, da] = a.split('-').map(Number), [, mb, db] = b.split('-').map(Number), y = b.slice(0, 4);
+    return ma === mb ? `${da} – ${db} ${I.months[mb - 1]} ${y}` : `${da} ${I.months[ma - 1]} – ${db} ${I.months[mb - 1]} ${y}`;
+  };
+
+  function renderGrid() {
+    const days = Array.from({ length: 7 }, (_, k) => addDays(state.week, k));
+    $('[data-range]').textContent = rangeFmt(days[0], days[6]);
+    $('[data-prev]').disabled = state.week <= weekStartOf(today);
+    $('[data-next]').disabled = addDays(state.week, 7) > horizon;
+    const nodes = [el('div', 'wk-h')];
+    nodes[0].append(el('span', '', I.time));
+    days.forEach((d, k) => {
+      const h = el('div', `wk-h${d === today ? ' is-today' : ''}${d < today ? ' is-past' : ''}`);
+      h.append(el('span', '', I.days[k]), el('b', '', String(Number(d.slice(8)))));
+      nodes.push(h);
+    });
+    for (let h = S.openHour; h < S.closeHour; h++) {
+      nodes.push(el('div', 'wk-t', `${String(h).padStart(2, '0')}:00`));
+      days.forEach((d) => {
+        const c = d < today || d > horizon ? { kind: 'closed' } : cellState(state.data, d, h);
+        const sl = state.slot;
+        const inSel = sl && sl.start.slice(0, 10) === d && mins(sl.start.slice(11)) < (h + 1) * 60 && mins(sl.end.slice(11)) > h * 60;
+        let n;
+        if (c.kind === 'free') {
+          n = el('button', 'wk-c free'); n.type = 'button';
+          n.setAttribute('aria-label', I.free_aria.replace('{when}', `${I.days[days.indexOf(d)]} ${Number(d.slice(8))} ${I.months[Number(d.slice(5, 7)) - 1]}, ${String(h).padStart(2, '0')}:00`));
+          n.setAttribute('aria-pressed', String(!!inSel));
+          n.onclick = () => { state.slot = { start: c.start, end: c.end }; renderGrid(); renderRequest(); };
+        } else n = el('div', `wk-c ${c.kind}`);
+        if (inSel) { n.classList.add('sel'); if (mins(sl.start.slice(11)) >= h * 60 && mins(sl.start.slice(11)) < (h + 1) * 60) { n.classList.add('first'); n.dataset.t = sl.start.slice(11, 16); } if (c.kind !== 'free') n.setAttribute('aria-hidden', 'true'); }
+        nodes.push(n);
+      });
+    }
+    grid.replaceChildren(...nodes);
+  }
+
+  async function load() {
+    const id = ++seq; state.data = null; retry.hidden = true; renderGrid();
+    if (!S.scheduleApi) { goOffline(); return; }
+    const from = state.week < today ? today : state.week, to0 = addDays(state.week, 6), to = to0 > horizon ? horizon : to0;
+    if (from > to) { state.data = { days: {}, timeline: {}, durationMin: 60 }; status.textContent = ''; renderGrid(); return; }
+    status.textContent = I.loading;
+    const p = new URLSearchParams({ service: state.serviceId, from, to });
+    if (hourlyNow()) p.set('hours', state.hours);
+    try {
+      const res = await fetch(`${S.scheduleApi}/schedule?${p}`, { signal: AbortSignal.timeout(15000), cache: 'no-store' });
+      if (!res.ok) throw new Error('unavailable');
+      const data = validateSchedule(await res.json());
+      if (id !== seq) return;
+      state.data = data; state.offline = false;
+      status.textContent = I.ready.replace('{n}', data.durationMin / 60);
+      applyOffline(); renderGrid(); renderCard();
+    } catch { if (id === seq) goOffline(true); }
+  }
+  function goOffline(failed) {
+    state.offline = true; state.data = { days: {}, timeline: {}, durationMin: 60 };
+    status.textContent = failed ? I.error : I.error; retry.hidden = false; applyOffline(); renderGrid();
+  }
+  function applyOffline() { $('[data-date-field]').hidden = !state.offline; renderRequest(); }
+
+  function renderRequest() {
+    const sl = state.slot;
+    const when = sl ? `${I.days[(new Date(`${sl.start.slice(0, 10)}T00:00:00Z`).getUTCDay() + 6) % 7]} ${Number(sl.start.slice(8, 10))} ${I.months[Number(sl.start.slice(5, 7)) - 1]}, ${sl.start.slice(11, 16)}–${sl.end.slice(11, 16)}` : '';
+    chosenEl.textContent = sl ? I.chosen.replace('{when}', when) : I.pick;
+    chosenEl.classList.toggle('is-set', !!sl);
+    lock(cont, !(sl || state.offline));
+    const { r, addons } = result();
+    last = r.ok ? { r, addons, when } : null;
+    const text = last ? buildWhatsAppText(last.r, {
+      greeting: I.greeting, name: val('f-name'), reach: val('f-reach'), notes: val('f-notes'),
+      preferredDate: when || val('f-date'),
+    }, addons, { quoteLabels: I.quote_labels }) : I.greeting;
+    send.href = waUrl(S.wa, text); send.dataset.text = text;
+  }
+  const val = (id) => (document.getElementById(id) || {}).value || '';
+
+  cont.addEventListener('click', () => {
+    if (cont.getAttribute('aria-disabled') === 'true') return;
+    details.hidden = false; cont.hidden = true; renderRequest();
+    const h = document.getElementById('wk-dh'); h.scrollIntoView({ block: 'start' }); h.focus({ preventScroll: true });
+  });
+  sendTg.addEventListener('click', () => {
+    const t = send.dataset.text || '';
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => { copied.textContent = I.copied; }, () => {});
+  });
+  details.addEventListener('input', renderRequest);
+  details.addEventListener('submit', (e) => e.preventDefault());
+
+  // controls
+  $$('[role=tab]').forEach((t) => {
+    t.addEventListener('click', () => select(t.dataset.service));
+    t.addEventListener('keydown', (e) => {
+      const tabs = $$('[role=tab]'), i = tabs.indexOf(t); let j = -1;
+      if (e.key === 'ArrowRight') j = (i + 1) % tabs.length; else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length; else if (e.key === 'Home') j = 0; else if (e.key === 'End') j = tabs.length - 1;
+      if (j >= 0) { e.preventDefault(); tabs[j].focus(); select(tabs[j].dataset.service); }
+    });
+  });
+  const shift = (n) => { state.week = addDays(state.week, n * 7); state.slot = null; renderRequest(); load(); };
+  $('[data-prev]').addEventListener('click', () => shift(-1));
+  $('[data-next]').addEventListener('click', () => shift(1));
+  $('[data-today]').addEventListener('click', () => { state.week = weekStartOf(today); load(); });
+  retry.addEventListener('click', load);
+  root.addEventListener('change', (ev) => { if (ev.target.name === 'quote') { ev.target.checked ? state.quote.add(ev.target.value) : state.quote.delete(ev.target.value); renderCard(); } });
+  extras.addEventListener('click', (ev) => {
+    const b = ev.target.closest('.stepper button'); if (!b || b.getAttribute('aria-disabled') === 'true') return;
+    const row = b.closest('.xrow'), id = row.dataset.addon, dir = b.classList.contains('plus') ? 1 : -1;
+    const q = Math.max(0, (state.addons[id] || 0) + dir); if (q) state.addons[id] = q; else delete state.addons[id];
+    renderCard();
+  });
+
+  select(parseServiceParam(location.search, config.services) || 'personal');
+}
+
+if (root) init();

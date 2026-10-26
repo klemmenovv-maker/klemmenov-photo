@@ -7,10 +7,8 @@
     "switch_label": "Русская версия",
     "nav": [
       "Main",
-      "Work",
-      "Prices",
-      "Reviews",
-      "Contact"
+      "Portfolio",
+      "Book"
     ],
     "book": "Book a shoot",
     "skip": "Skip to content",
@@ -64,61 +62,18 @@
       "Personal",
       "Events",
       "Commercial",
-      "Prices",
-      "Reviews"
+      "Book"
     ],
     "legal": "Dubai.",
-    "calc": {
-      "personal": "Personal",
-      "commercial": "Commercial",
-      "event": "Event",
-      "hour1": "hour",
-      "hourN": "hours",
-      "per": "AED per hour",
-      "min": "minimum",
-      "min_h": "hours",
-      "studio": "Studio rental is not included.",
-      "express": "Express delivery available.",
-      "book": "Book this shoot",
-      "less": "One hour less",
-      "more": "One hour more",
-      "group": "Type of shoot"
-    },
-    "prices": {
-      "title": "Prices — Klemmenov, photographer in Dubai",
-      "desc": "Photoshoot prices in AED: personal 1,200 an hour, commercial and event 1,500 an hour, studio packages from 5,100 AED.",
-      "h1": "Prices",
-      "lead": "All prices in AED. Studio rental is not included in hourly shoots.",
-      "included": "Included",
-      "notes": "Notes",
-      "slot": "Book a slot",
-      "per": "AED / hour",
-      "pk_h": "Photoshoot Packages",
-      "pk_unit": "AED",
-      "alt": "Photograph by Klemmenov, Dubai",
-      "jump": [
-        "Hourly rates",
-        "Packages",
-        "Additional services",
-        "Questions"
-      ],
-      "faq_h": "Questions"
-    },
     "reviews": {
       "title": "Reviews — Klemmenov, photographer in Dubai",
       "desc": "What clients say about shoots with Klemmenov in Dubai.",
       "h1": "Reviews",
       "lead": "What clients say about the photos, next to the photo."
     },
-    "contact": {
-      "title": "Contact — Klemmenov, photographer in Dubai",
-      "desc": "Book a photoshoot in Dubai: message Klemmenov on WhatsApp, Telegram or Instagram.",
-      "h1": "Contact",
-      "lead": "Photographer in Dubai. Write with the date and the type of shoot, and I’ll reply as soon as possible."
-    },
     "home": {
       "title": "Klemmenov — Photographer in Dubai",
-      "desc": "Photographer in Dubai: personal portraits, event photography and commercial shoots. Prices in AED, booking on WhatsApp."
+      "desc": "Photographer in Dubai: personal portraits, event photography and commercial shoots. Pick a free time and book online."
     },
     "gal": {
       "personal": {
@@ -197,168 +152,6 @@
         ]
       }
     ],
-    "addons": {
-      "h": "Additional services",
-      "note": "The number of people, time and details are agreed in advance.",
-      "items": [
-        [
-          "Extra retouched photo",
-          "10 AED / photo"
-        ],
-        [
-          "Second photographer (events)",
-          "from 1,200 AED / hour"
-        ],
-        [
-          "Assistant",
-          "from 600 AED / hour"
-        ],
-        [
-          "Makeup artist",
-          "700 AED"
-        ],
-        [
-          "Makeup artist and hair",
-          "1,000 AED per person"
-        ],
-        [
-          "Studio rental",
-          "315–500 AED / hour"
-        ],
-        [
-          "Travel outside Dubai",
-          "300–600 AED"
-        ],
-        [
-          "Video editing",
-          "150 AED per video"
-        ]
-      ]
-    },
-    "home_v2": {
-      "hero_from": "From 1,200 AED an hour",
-      "services_h": "Choose your shoot",
-      "from_label": "from",
-      "unit": "AED / hour",
-      "book_cta": "Book this shoot",
-      "how_h": "How it works",
-      "work_h": "Selected work",
-      "work_cta": "See all work",
-      "packages_h": "Packages",
-      "faq_h": "Questions",
-      "reviews_h": "What clients say",
-      "book_h": "Ready when you are",
-      "book_lead": "Choose your shoot and send the request in WhatsApp."
-    },
-    "work_hub": {
-      "title": "Selected work | Evgeny Klemmenov",
-      "desc": "Photo work by Evgeny Klemmenov: personal, event and commercial shoots in Dubai.",
-      "h1": "Selected work",
-      "lead": "A selection from personal, event and commercial shoots.",
-      "count_label": "frames"
-    },
-    "book_page": {
-      "title": "Book a shoot | Evgeny Klemmenov",
-      "desc": "Choose a shoot, add extras, pick a date and send your request in WhatsApp.",
-      "h1": "Book a shoot",
-      "steps": [
-        "Shoot and hours",
-        "Extras",
-        "Preferred date and time",
-        "Contact"
-      ],
-      "request_btn": "Request in WhatsApp",
-      "summary_h": "Your request",
-      "step_label": "Step",
-      "service_legend": "Choose a shoot",
-      "per_hour": "AED / hour",
-      "min_hours": "minimum {n} {unit}",
-      "package_tag": "package, fixed price",
-      "hours_label": "Hours",
-      "hours_less": "Fewer hours",
-      "hours_more": "More hours",
-      "hour": "hour",
-      "hours": "hours",
-      "package_note": "Makeup is already included in this package, so the makeup add-ons are not available.",
-      "extras_fixed_h": "Added to the online total",
-      "extras_quote_h": "Priced separately",
-      "unit_line": "{price} AED per {unit}",
-      "qty_less": "Fewer",
-      "qty_more": "More",
-      "quote_note": "Price confirmed by the photographer, not charged online.",
-      "quote_labels": {
-        "second_photographer": "Second photographer",
-        "assistant": "Assistant",
-        "studio": "Studio rental",
-        "travel": "Travel"
-      },
-      "date_label": "Preferred date and time",
-      "date_ph": "e.g. Sat 14 Nov, 18:00 to 21:00",
-      "date_hint": "The photographer confirms availability in WhatsApp.",
-      "name_label": "Your name",
-      "reach_label": "WhatsApp or Telegram",
-      "reach_ph": "+971 or @username",
-      "notes_label": "Notes (optional)",
-      "notes_ph": "Location, occasion, anything we should know",
-      "summary_hours": "{n} {unit}",
-      "summary_total": "Online total",
-      "summary_currency": "AED",
-      "summary_quote": "quote",
-      "summary_empty": "Choose a shoot to see the total.",
-      "request_note": "Nothing is charged online. The photographer replies in WhatsApp to confirm the date and the final price.",
-      "errors": {
-        "unknown_service": "Choose a shoot.",
-        "invalid_hours": "Choose between 1 and 12 hours.",
-        "below_minimum": "This shoot has a minimum number of hours. Add more hours.",
-        "unknown_addon": "One of the extras is not available.",
-        "invalid_quantity": "Check the quantity of the extras.",
-        "not_available": "Makeup is included in this package and cannot be added.",
-        "load": "The price list could not be loaded. Please send your request in WhatsApp."
-      },
-      "noscript": "This page needs JavaScript to calculate your price. You can still write to the photographer in WhatsApp.",
-      "noscript_btn": "Open WhatsApp",
-      "units": {
-        "artist": "artist",
-        "person": "person",
-        "photo": "photo",
-        "video": "video"
-      },
-      "live": {
-        "desc": "Choose a shoot, pick a free date and time, and pay the deposit to hold your slot.",
-        "step_date": "Date and time",
-        "summary_h": "Your booking",
-        "slots_loading": "Loading free times…",
-        "slots_pick_service": "Choose a shoot first to see free times.",
-        "slots_empty": "No free times in these dates. Show more days or request in WhatsApp.",
-        "days_label": "Available days",
-        "times_label": "Free times",
-        "more_days": "Show more days",
-        "retry": "Try again",
-        "tz": "Dubai time (UTC+4)",
-        "tz_note": "Times are in Dubai time, which differs from the time zone on your device.",
-        "chosen": "Chosen: {when} Dubai time",
-        "terms_before": "I accept the ",
-        "terms_link": "booking terms",
-        "terms_after": " and the ",
-        "pay_btn": "Pay deposit",
-        "pay_busy": "Opening payment…",
-        "pay_note": "You pay the deposit now on a secure Ziina page. The rest is paid on the day of the shoot.",
-        "fallback_btn": "Request in WhatsApp instead",
-        "deposit": "Deposit due now: {n} AED",
-        "remaining": "Remaining on the day: {n} AED",
-        "missing": "To pay, still needed: {list}.",
-        "missing_items": {
-          "service": "a shoot",
-          "date": "a date and time",
-          "name": "your name",
-          "contact": "WhatsApp or Telegram",
-          "terms": "accepting the terms"
-        },
-        "date_pref": "{when} Dubai time",
-        "privacy_link": "privacy policy",
-        "terms_end": "."
-      }
-    },
     "legal_pages": {
       "terms": {
         "link": "Terms",
@@ -372,33 +165,6 @@
         "desc": "How Klemmenov handles personal data.",
         "h1": "Privacy"
       }
-    },
-    "book_status": {
-      "thanks_title": "Booking status | Klemmenov",
-      "thanks_desc": "Status of your booking.",
-      "cancelled_title": "Payment cancelled | Klemmenov",
-      "cancelled_desc": "The payment was cancelled.",
-      "h1": "Your booking",
-      "checking": "Checking your booking…",
-      "paid_h": "Booking confirmed",
-      "paid_note": "I will message you on WhatsApp or Telegram to confirm the details.",
-      "service": "Shoot",
-      "when": "Date and time",
-      "when_value": "{when} Dubai time",
-      "deposit_paid": "Deposit paid",
-      "remaining": "Remaining on the day",
-      "pending_h": "We are confirming your payment",
-      "pending_note": "This can take a minute. Keep this page open, it updates by itself. If nothing changes, write in WhatsApp.",
-      "pending_still": "Still confirming. If you were charged, write in WhatsApp and the booking will be checked.",
-      "expired_h": "This hold expired",
-      "expired_note": "The time was held for a short while and the payment did not arrive in time. You can choose a time again.",
-      "unknown_h": "Booking not found",
-      "unknown_note": "This link does not match a booking. If you paid, write in WhatsApp.",
-      "cancelled_h": "Payment cancelled",
-      "cancelled_note": "The payment was not completed. The time stays reserved for about {min} minutes, so choose another time or try again later. You can also write in WhatsApp.",
-      "back": "Back to booking",
-      "wa": "Write in WhatsApp",
-      "noscript": "This page needs JavaScript to check your booking. If you paid, write in WhatsApp."
     },
     "series": {
       "personal": {
@@ -418,6 +184,156 @@
           }
         ]
       }
+    },
+    "home3": {
+      "hero_h": "Photographer in Dubai",
+      "hero_lead": "Personal, event and commercial shoots.",
+      "portfolio": "Portfolio",
+      "scroll": "Scroll to the portfolio",
+      "work_h": "Portfolio",
+      "open": "Open gallery",
+      "book_h": "Let’s shoot",
+      "book_lead": "Pick a free time in the calendar, or just write me. I confirm every shoot in WhatsApp.",
+      "write": "Write me"
+    },
+    "work_hub": {
+      "title": "Portfolio | Evgeny Klemmenov",
+      "desc": "Photo work by Evgeny Klemmenov: personal, event and commercial shoots in Dubai.",
+      "h1": "Portfolio",
+      "lead": "A selection from personal, event and commercial shoots.",
+      "count_label": "frames"
+    },
+    "wk": {
+      "title": "Book a shoot | Evgeny Klemmenov",
+      "desc": "Choose a shoot, pick a free time in the calendar and send your request. Nothing is charged online.",
+      "h1": "Book a shoot",
+      "lead": "Choose a shoot, tap a free time, send the request. Nothing is charged online: I confirm the details in WhatsApp.",
+      "week_prev": "Previous week",
+      "week_next": "Next week",
+      "today": "Today",
+      "cal_label": "Free times this week, Dubai time",
+      "time": "Time",
+      "legend": [
+        "Free",
+        "Booked",
+        "Not available",
+        "Your time"
+      ],
+      "loading": "Checking free times…",
+      "ready": "{n}-hour session · Dubai time (UTC+4)",
+      "error": "Free times could not be loaded. Retry, or continue and give a preferred date.",
+      "retry": "Retry",
+      "tabs": "Choose a shoot",
+      "hours": "Hours",
+      "hour_w": "hour",
+      "hours_w": "hours",
+      "less": "Fewer hours",
+      "more": "More hours",
+      "aed": "AED",
+      "per_pkg": "fixed price",
+      "extras": "Extras",
+      "extras_quote": "Priced separately",
+      "quote_note": "Price confirmed by the photographer.",
+      "pkg_note": "Makeup is already included in this package.",
+      "units": {
+        "artist": "artist",
+        "person": "person",
+        "photo": "photo",
+        "video": "video"
+      },
+      "unit_line": "{price} AED per {unit}",
+      "qty_less": "Fewer",
+      "qty_more": "More",
+      "quote_labels": {
+        "second_photographer": "Second photographer",
+        "assistant": "Assistant",
+        "studio": "Studio rental",
+        "travel": "Travel"
+      },
+      "pick": "Pick a free time in the calendar.",
+      "chosen": "{when}",
+      "continue": "Continue",
+      "details": "Your details",
+      "name": "Your name",
+      "reach": "WhatsApp or Telegram",
+      "reach_ph": "+971 or @username",
+      "notes": "Notes (optional)",
+      "notes_ph": "Location, occasion, anything I should know",
+      "date": "Preferred date and time",
+      "date_ph": "e.g. Sat 14 Nov, 18:00 to 21:00",
+      "send_wa": "Send in WhatsApp",
+      "send_tg": "Telegram",
+      "copied": "Request text copied. Paste it in the chat.",
+      "note": "Nothing is charged online. I reply to confirm the time, the studio and the final price.",
+      "noscript": "This calendar needs JavaScript. You can still book by writing to me in WhatsApp.",
+      "noscript_btn": "Open WhatsApp",
+      "price_load": "The price list could not be loaded. Please write to me in WhatsApp.",
+      "errors": {
+        "unknown_service": "Choose a shoot.",
+        "invalid_hours": "Choose between 1 and 12 hours.",
+        "below_minimum": "This shoot has a minimum number of hours.",
+        "unknown_addon": "One of the extras is not available.",
+        "invalid_quantity": "Check the quantity of the extras.",
+        "not_available": "Makeup is included in this package."
+      },
+      "days": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat",
+        "Sun"
+      ],
+      "months": [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec"
+      ],
+      "free_aria": "{when}, free",
+      "summary_hours": "{n} {unit}",
+      "total": "Total",
+      "total_quote": "quote",
+      "greeting": "Hello! I’m booking through the website."
+    },
+    "write": {
+      "id": "message",
+      "h": "Or just write me",
+      "lead": "One tap sends a ready message. WhatsApp opens with the text already filled in.",
+      "cards": [
+        {
+          "id": "price",
+          "title": "Ask the price",
+          "en": "Hello Evgeny! I found your website and would like to know the cost of a photoshoot. Could you send me your prices?",
+          "ru": "Здравствуйте, Евгений! Нашёл ваш сайт и хочу узнать стоимость съёмки. Подскажите, пожалуйста, ваши цены?"
+        },
+        {
+          "id": "avail",
+          "title": "Check availability",
+          "en": "Hello Evgeny! I would like to book a photoshoot. Which dates are free in the coming weeks?",
+          "ru": "Здравствуйте, Евгений! Хочу записаться на съёмку. Подскажите, какие даты свободны в ближайшие недели?"
+        }
+      ],
+      "wa": "WhatsApp",
+      "tg": "Telegram",
+      "ig": "Instagram",
+      "copy": "Copy text",
+      "copied": "Text copied. Paste it in the chat.",
+      "copy_fail": "Select the text above and copy it.",
+      "note": "WhatsApp opens with the message filled in. Telegram and Instagram cannot pre-fill a message, so the text is copied when you tap: just paste it.",
+      "contacts_h": "Contacts",
+      "phone": "Phone / WhatsApp",
+      "reviews_h": "Reviews",
+      "reviews_lead": "What clients say about the photos, next to the photo."
     }
   },
   "ru": {
@@ -429,11 +345,9 @@
     "nav": [
       "Главная",
       "Портфолио",
-      "Цены",
-      "Отзывы",
-      "Контакты"
+      "Запись"
     ],
-    "book": "Записаться на съёмку",
+    "book": "Записаться",
     "skip": "Перейти к содержимому",
     "menu": "Меню",
     "wa_text": "Здравствуйте! Пишу с сайта. Подскажите, какие даты свободны?",
@@ -485,60 +399,18 @@
       "Личные",
       "Ивенты",
       "Бренды",
-      "Цены",
-      "Отзывы"
+      "Запись"
     ],
     "legal": "Дубай.",
-    "calc": {
-      "personal": "Личная",
-      "commercial": "Коммерческая",
-      "event": "Ивент",
-      "hour1": "час",
-      "hourN": "часа",
-      "hourM": "часов",
-      "per": "AED в час",
-      "min": "минимум",
-      "min_h": "часа",
-      "studio": "Аренда студии не включена.",
-      "express": "Доступна срочная сдача.",
-      "book": "Забронировать эту съёмку",
-      "less": "На час меньше",
-      "more": "На час больше",
-      "group": "Тип съёмки"
-    },
-    "prices": {
-      "title": "Цены — Klemmenov, фотограф в Дубае",
-      "desc": "Цены на съёмки в AED: личная 1 200 в час, коммерческая и ивенты 1 500 в час, студийные пакеты от 5 100 AED.",
-      "h1": "Цены",
-      "lead": "Все цены в AED. Аренда студии в почасовые съёмки не входит.",
-      "included": "Входит",
-      "notes": "Примечания",
-      "slot": "Записаться",
-      "per": "AED / час",
-      "pk_h": "Пакеты съёмок",
-      "pk_unit": "AED",
-      "alt": "Фотография Klemmenov, Дубай",
-      "jump": [
-        "Почасовые тарифы",
-        "Пакеты",
-        "Дополнительные услуги"
-      ]
-    },
     "reviews": {
       "title": "Отзывы — Klemmenov, фотограф в Дубае",
       "desc": "Что клиенты говорят о съёмках с Klemmenov в Дубае.",
       "h1": "Отзывы",
       "lead": "Что клиенты говорят о фото, рядом с самим фото."
     },
-    "contact": {
-      "title": "Контакты — Klemmenov, фотограф в Дубае",
-      "desc": "Записаться на съёмку в Дубае: напишите Klemmenov в WhatsApp, Telegram или Instagram.",
-      "h1": "Контакты",
-      "lead": "Фотограф в Дубае. Напишите дату и тип съёмки, отвечу как можно скорее."
-    },
     "home": {
       "title": "Klemmenov — фотограф в Дубае",
-      "desc": "Фотограф в Дубае: личные портреты, съёмка мероприятий и коммерческие съёмки. Цены в AED, запись в WhatsApp."
+      "desc": "Фотограф в Дубае: личные портреты, съёмка мероприятий и коммерческие съёмки. Выберите свободное время и запишитесь онлайн."
     },
     "gal": {
       "personal": {
@@ -617,44 +489,6 @@
         ]
       }
     ],
-    "addons": {
-      "h": "Дополнительные услуги",
-      "note": "Количество людей, время и детали обсуждаются заранее.",
-      "items": [
-        [
-          "Дополнительная обработка фото",
-          "10 AED за фото"
-        ],
-        [
-          "Второй фотограф (ивенты)",
-          "от 1 200 AED в час"
-        ],
-        [
-          "Ассистент",
-          "от 600 AED в час"
-        ],
-        [
-          "Визажист",
-          "700 AED"
-        ],
-        [
-          "Визажист и причёска",
-          "1 000 AED на человека"
-        ],
-        [
-          "Аренда студии",
-          "315–500 AED в час"
-        ],
-        [
-          "Выезд за пределы Дубая",
-          "300–600 AED"
-        ],
-        [
-          "Монтаж видео",
-          "150 AED за видео"
-        ]
-      ]
-    },
     "series": {
       "personal": {
         "count": "кадров",
@@ -673,6 +507,55 @@
           }
         ]
       }
+    },
+    "home3": {
+      "hero_h": "Фотограф в Дубае",
+      "hero_lead": "Личные, ивент и коммерческие съёмки.",
+      "portfolio": "Портфолио",
+      "scroll": "К портфолио",
+      "work_h": "Портфолио",
+      "open": "Открыть галерею",
+      "book_h": "Снимем?",
+      "book_lead": "Выберите свободное время в календаре или просто напишите мне. Каждую съёмку подтверждаю в WhatsApp.",
+      "write": "Написать мне"
+    },
+    "work_hub": {
+      "title": "Портфолио | Evgeny Klemmenov",
+      "desc": "Работы Evgeny Klemmenov: личные, ивент и коммерческие съёмки в Дубае.",
+      "h1": "Портфолио",
+      "lead": "Избранное из личных, ивент и коммерческих съёмок.",
+      "count_label": "кадров"
+    },
+    "wk": {},
+    "write": {
+      "id": "message",
+      "h": "Или просто напишите",
+      "lead": "Одно нажатие отправляет готовое сообщение. WhatsApp открывается с уже заполненным текстом.",
+      "cards": [
+        {
+          "id": "price",
+          "title": "Узнать стоимость",
+          "en": "Hello Evgeny! I found your website and would like to know the cost of a photoshoot. Could you send me your prices?",
+          "ru": "Здравствуйте, Евгений! Нашёл ваш сайт и хочу узнать стоимость съёмки. Подскажите, пожалуйста, ваши цены?"
+        },
+        {
+          "id": "avail",
+          "title": "Узнать доступность",
+          "en": "Hello Evgeny! I would like to book a photoshoot. Which dates are free in the coming weeks?",
+          "ru": "Здравствуйте, Евгений! Хочу записаться на съёмку. Подскажите, какие даты свободны в ближайшие недели?"
+        }
+      ],
+      "wa": "WhatsApp",
+      "tg": "Telegram",
+      "ig": "Instagram",
+      "copy": "Скопировать текст",
+      "copied": "Текст скопирован. Вставьте его в чат.",
+      "copy_fail": "Выделите текст выше и скопируйте его.",
+      "note": "В WhatsApp сообщение подставляется само. Telegram и Instagram не умеют подставлять текст, поэтому по нажатию он копируется: просто вставьте его в чат.",
+      "contacts_h": "Контакты",
+      "phone": "Телефон / WhatsApp",
+      "reviews_h": "Отзывы",
+      "reviews_lead": "Что клиенты говорят о фото, рядом с самим фото."
     }
   }
 }
