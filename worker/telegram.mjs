@@ -192,3 +192,19 @@ export function formatRequest(r, crmFailed = false) {
   if (crmFailed) out.push('CRM did not receive this request: please add it manually.');
   return out.join('\n');
 }
+
+// ---- owner area (Russian: the owner reads these) ----
+
+export function formatReminder(r, why) {
+  const x = r || {};
+  const out = [`<b>Напоминание</b>: ${block(why, MAX_NOTES)}`, `${line(x.name)}, ${line(x.contact)}`, `${line(x.serviceLabel)}${x.hours ? `, ${num(x.hours)} ч` : ''}`];
+  out.push(x.start ? `Время: ${formatWhen(x.start, null)}` : 'Время: не выбрано');
+  if (x.ownerNote) out.push(`Заметка: ${block(x.ownerNote, MAX_NOTES)}`);
+  return out.join('\n');
+}
+
+export function formatClientUpdate(r, cancelled) {
+  const x = r || {};
+  return [`<b>${cancelled ? 'Клиент отменил заявку' : 'Клиент обновил заявку'}</b>`, `${line(x.name)}, ${line(x.contact)}`,
+    x.start ? `Время: ${formatWhen(x.start, null)}` : 'Время: не выбрано', x.notes ? `Заметки клиента: ${block(x.notes, MAX_NOTES)}` : ''].filter(Boolean).join('\n');
+}

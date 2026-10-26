@@ -2,11 +2,13 @@
 // no hold. The server prices it, then delivers it to the CRM webhook and to the
 // owner's Telegram. If neither works the client gets 502 and falls back to
 // WhatsApp, so a request is never silently lost.
+import { createRequest } from './requests.mjs';
 import { fail, reply, readBody, isJsonContentType, hmacSha256Hex } from './http.mjs';
 
 const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/;
 const CONTACT_RE = /^(\+?[\d\s().-]{7,}|@[A-Za-z0-9_]{4,32}|[^\s@]+@[^\s@]+\.[^\s@]{2,})$/;
 const LINK_RE = /https?:\/\/|www\./gi;
+const TOKEN_RE = /^[A-Za-z0-9_-]{16,64}$/;
 const MAX_ADDON_QTY = 1000;
 const DEDUPE_TTL_S = 600;
 
@@ -114,6 +116,12 @@ export async function request(c) {
     return fail(502, 'delivery_failed'); // the client offers the WhatsApp fallback
   }
   try { await env.BOOKINGS.put(dedupeKey, '1', { expirationTtl: DEDUPE_TTL_S }); } catch { /* best effort */ }
+  // Keep the request for the account areas. A KV failure must not turn a delivered request into an error.
+  let token = null;
+  try {
+    const existing = typeof body.clientToken === 'string' && TOKEN_RE.test(body.clientToken) ? body.clientToken : null;
+    ({ token } = await createRequest(env.BOOKINGS, record, existing));
+  } catch { deps.log({ event: 'request_store_failed', requestId: id }); }
   deps.log({ event: 'request_received', requestId: id, crm, telegram });
-  return reply(200, { ok: true, id });
+  return reply(200, token ? { ok: true, id, token } : { ok: true, id });
 }

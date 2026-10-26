@@ -193,7 +193,7 @@ def book(lang):
     quote = ''.join(
         f'<label class="opt"><input type="checkbox" name="quote" value="{qid}"><span><b>{e(B["quote_labels"][qid])}</b><small>{e(txt)}</small></span></label>'
         for qid, txt in C['quote_addons'].items())
-    cfg = html.escape(json.dumps({'wa': C['whatsapp'], 'tg': C['telegram'], 'scheduleApi': SCHEDULE_API, 'horizonDays': BOOKING_CFG['horizonDays'],
+    cfg = html.escape(json.dumps({'wa': C['whatsapp'], 'tg': C['telegram'], 'scheduleApi': SCHEDULE_API, 'terms': TERMS, 'horizonDays': BOOKING_CFG['horizonDays'],
         'openHour': 10, 'closeHour': 21, 'pkgMin': BOOKING_CFG['package_duration_min'], 'info': info, 'i': {k: v for k, v in B.items() if k not in ('title', 'desc', 'h1', 'lead')}}, ensure_ascii=False), quote=True)
     # write-me cards: WhatsApp prefilled; Telegram / Instagram copy the same text on tap
     msgs = ''
@@ -243,7 +243,9 @@ def book(lang):
 <div class="field"><label for="f-name">{B['name']}</label><input id="f-name" type="text" autocomplete="name" maxlength="80"></div>
 <div class="field"><label for="f-reach">{B['reach']}</label><input id="f-reach" type="text" autocomplete="tel" maxlength="120" placeholder="{e(B['reach_ph'])}"></div>
 <div class="field"><label for="f-notes">{B['notes']}</label><textarea id="f-notes" rows="3" maxlength="1000" placeholder="{e(B['notes_ph'])}"></textarea></div>
-<div class="actions"><a class="btn" data-send href="{wa(x)}" target="_blank" rel="noopener">{B['send_wa']}</a><a class="btn ghost" data-send-tg href="{C['telegram']}" target="_blank" rel="noopener">{B['send_tg']}</a></div>
+{('<div class="field"><label class="opt"><input type="checkbox" id="f-terms"><span>' + B['terms_check'] + '</span></label></div>') if TERMS else ''}
+<div class="actions">{('<button type="button" class="btn" data-submit>' + B['submit'] + '</button>') if SCHEDULE_API else ''}<a class="btn ghost" data-send href="{wa(x)}" target="_blank" rel="noopener">{B['send_wa']}</a><a class="btn ghost" data-send-tg href="{C['telegram']}" target="_blank" rel="noopener">{B['send_tg']}</a></div>
+<p class="small note" data-submit-status role="status"></p>
 <p class="small note">{B['note']}</p><p class="small note" data-copied role="status"></p>
 </form>
 </div>
@@ -270,6 +272,35 @@ def book(lang):
 '''
     t += foot(x).replace('</body>', f'<script type="module" src="../assets/book-week.mjs?v={ASSET_VERSION}"></script>\n</body>')
     w(lang, 'book/index.html', t)
+
+def my(lang):  # client area: their own requests (token kept in the browser)
+    x = Ctx(lang, 'my/'); A = x.L['my']
+    d = ' '.join(f'data-{k}="{e(v, quote=True)}"' for k, v in A['js'].items())
+    t = head(x, A['title'], A['desc'], noindex=True)
+    t += f'''<section class="ch-black acct"><div class="page-head"><h1 class="rv">{A['h1']}</h1><p class="lead rv" style="--d:80ms">{A['lead']}</p></div>
+<div class="wrap" data-my data-api="{e(SCHEDULE_API, quote=True)}" {d}>
+<p class="note" data-status role="status"></p><div class="acct-list" data-list></div>
+<div class="actions"><a class="btn" href="../book/">{A['new']}</a><a class="btn ghost" href="{wa(x)}">WhatsApp</a></div>
+</div></section>
+'''
+    t += foot(x).replace('</body>', f'<script type="module" src="../assets/my-page.mjs?v={ASSET_VERSION}"></script>\n</body>')
+    w(lang, 'my/index.html', t)
+
+def admin():  # owner area, Russian, not indexed; every action needs the Google sign-in
+    x = Ctx('en', 'admin/')
+    t = head(x, 'Админка — Klemmenov', 'Заявки, заметки и напоминания.', noindex=True).replace('<html lang="en">', '<html lang="ru">')
+    t += f'''<section class="ch-black acct"><div class="page-head"><h1>Заявки</h1><p class="lead">Только для владельца.</p></div>
+<div class="wrap" data-admin data-api="{e(SCHEDULE_API, quote=True)}">
+<p class="note" data-msg role="status"></p>
+<div data-signin hidden><a class="btn" href="#">Войти через Google</a></div>
+<div data-app hidden>
+<div class="actions"><div class="acct-tabs" data-tabs></div><button type="button" class="btn ghost" data-logout>Выйти</button></div>
+<div class="acct-list" data-list></div>
+<h2 class="sub3">График свободности</h2><div data-chart class="acct-chart"></div>
+</div></div></section>
+'''
+    t += foot(x).replace('</body>', f'<script type="module" src="../assets/admin-page.mjs?v={ASSET_VERSION}"></script>\n</body>')
+    w('en', 'admin/index.html', t)
 
 def redirect(lang, path, target, canon):  # old URLs keep working: meta refresh + canonical to the new page
     x = Ctx(lang, path); L = x.L
@@ -376,7 +407,7 @@ def seo():
     w('en', 'assets/favicon.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#120d0c"/><text x="32" y="47" font-family="Georgia,serif" font-size="44" text-anchor="middle" fill="#d2a971">K</text></svg>')
 
 for lg in LANGS:
-    home(lg); work(lg); [gallery(lg, k) for k in CLS]; book(lg)
+    home(lg); work(lg); [gallery(lg, k) for k in CLS]; book(lg); my(lg)
     redirect(lg, 'prices/', '../book/', 'book/'); redirect(lg, 'reviews/', '../book/#reviews', 'book/'); redirect(lg, 'contact/', '../book/#message', 'book/')
     shutil.rmtree(os.path.join(D, 'ru' if lg == 'ru' else '', 'book', 'thanks'), ignore_errors=True)
     shutil.rmtree(os.path.join(D, 'ru' if lg == 'ru' else '', 'book', 'cancelled'), ignore_errors=True)
@@ -385,7 +416,7 @@ if TERMS:
 else:   # gate closed: no stale legal pages
     for lg in LANGS:
         for k in ('terms', 'privacy'): shutil.rmtree(os.path.join(D, 'ru' if lg == 'ru' else '', k), ignore_errors=True)
-notfound(); seo()
+admin(); notfound(); seo()
 
 def pricing_assets():  # one source of truth: content.json -> JSON for the browser and the Worker
     keys = ['max_hours', 'services', 'deposit', 'fixed_addons', 'quote_addons']
@@ -393,7 +424,7 @@ def pricing_assets():  # one source of truth: content.json -> JSON for the brows
     os.makedirs(os.path.join(ROOT, 'worker'), exist_ok=True)
     for path in (os.path.join(D, 'assets', 'pricing.json'), os.path.join(ROOT, 'worker', 'pricing.json')):
         open(path, 'w', encoding='utf8').write(data)
-    for f in ('pricing.mjs', 'book-ui.mjs', 'schedule.mjs', 'book-week.mjs'):
+    for f in ('pricing.mjs', 'book-ui.mjs', 'schedule.mjs', 'book-week.mjs', 'account.mjs', 'my-page.mjs', 'admin-page.mjs', 'request-client.mjs'):
         shutil.copyfile(os.path.join(ROOT, 'shared', f), os.path.join(D, 'assets', f))
 pricing_assets()
 print('built', sorted(os.listdir(D)))

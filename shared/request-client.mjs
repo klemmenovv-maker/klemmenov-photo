@@ -23,7 +23,7 @@ export async function submitRequest(api, payload, fetchImpl = fetch) {
   }
   let data = null;
   try { data = await res.json(); } catch { /* not json */ }
-  if (res.ok && data && data.ok === true) return { ok: true, id: data.id ?? null };
+  if (res.ok && data && data.ok === true) return { ok: true, id: data.id ?? null, token: data.token ?? null };
   const error = (data && data.error) || `http_${res.status}`;
   if (res.status >= 500 || res.status === 404) {
     return { ok: false, fallback: 'whatsapp', error, message: 'The booking service is unavailable. Send your request in WhatsApp instead.' };

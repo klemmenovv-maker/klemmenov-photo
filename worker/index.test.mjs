@@ -123,8 +123,8 @@ test('cors: preflight answers 204; headers only for an allowed origin', async ()
   const ok = await call(f, makeEnv(), req('OPTIONS', '/checkout', { origin: ORIGIN, headers: { 'Access-Control-Request-Method': 'POST' } }));
   assert.equal(ok.status, 204);
   assert.equal(ok.headers.get('access-control-allow-origin'), ORIGIN);
-  assert.equal(ok.headers.get('access-control-allow-methods'), 'GET, POST, OPTIONS');
-  assert.equal(ok.headers.get('access-control-allow-headers'), 'Content-Type');
+  assert.equal(ok.headers.get('access-control-allow-methods'), 'GET, POST, PATCH, DELETE, OPTIONS');
+  assert.equal(ok.headers.get('access-control-allow-headers'), 'Content-Type, Authorization');
   assert.equal(ok.headers.get('access-control-max-age'), '600');
   assert.match(ok.headers.get('vary'), /Origin/);
   const bad = await call(f, makeEnv(), req('OPTIONS', '/checkout', { origin: 'https://evil.example' }));

@@ -324,3 +324,26 @@ footer .lead { margin: 0 auto; }
   .js .tri img { transform: none; }
   a:hover > figure img, figure:hover img, .masonry a:hover img { transform: none; }
 }
+
+/* account areas: /my/ and /admin/ */
+.acct .wrap { display: grid; gap: 20px; padding-bottom: clamp(60px, 8vw, 110px); }
+.acct-list { display: grid; gap: 16px; }
+.acct-card { display: grid; gap: 8px; padding: 18px; border: 1px solid var(--line); border-radius: 6px; }
+.acct-card h2 { margin: 0; font-size: 1.25rem; }
+.acct-status { justify-self: start; padding: 2px 10px; border: 1px solid var(--acc); border-radius: 999px; font-size: .8rem; color: var(--acc); }
+.acct-card.st-declined .acct-status, .acct-card.st-cancelled .acct-status { color: var(--muted, #8a7f78); border-color: var(--line); }
+.acct-top { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.acct-when { font-size: 1.1rem; }
+.acct-form { display: grid; gap: 10px; }
+.acct-form input, .acct-form select, .acct-form textarea { width: 100%; box-sizing: border-box; padding: 10px; background: transparent; color: inherit; border: 1px solid var(--line); border-radius: 4px; font: inherit; }
+.acct-field { display: grid; gap: 4px; }
+.acct-more summary { cursor: pointer; color: var(--acc); padding: 6px 0; }
+.acct-rem-list { padding-left: 18px; }
+.acct-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: inherit; cursor: pointer; font: inherit; }
+.chip[aria-pressed="true"] { border-color: var(--acc); color: var(--acc); }
+.acct-day { display: grid; grid-template-columns: 78px 1fr; gap: 8px; align-items: center; margin-bottom: 4px; }
+.acct-bar { display: grid; grid-template-columns: repeat(22, 1fr); gap: 1px; }
+.acct-bar i { height: 18px; background: #5a5551; }
+.acct-bar i.free { background: #3d7a4a; } .acct-bar i.busy { background: #a3392f; }
+.acct-bar i.closed { background: #2a2623; }

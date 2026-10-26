@@ -3,6 +3,8 @@
 import { quote } from './pricing.mjs';
 import { addDays, buildWhatsAppText, dubaiToday, formatAed, parseServiceParam, waUrl } from './book-ui.mjs';
 import { validateSchedule } from './schedule.mjs';
+import { submitRequest } from './request-client.mjs';
+import { tokenStore, CLIENT_KEY } from './account.mjs';
 
 const root = typeof document === 'undefined' ? null : document.querySelector('[data-wk]');
 
@@ -189,6 +191,27 @@ async function init() {
   sendTg.addEventListener('click', () => {
     const t = send.dataset.text || '';
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => { copied.textContent = I.copied; }, () => {});
+  });
+  const submitBtn = $('[data-submit]'), submitStatus = $('[data-submit-status]');
+  if (submitBtn) submitBtn.addEventListener('click', async () => {
+    renderRequest();
+    const name = val('f-name').trim(), reach = val('f-reach').trim();
+    if (!last || !name || !reach) { submitStatus.textContent = I.fill; return; }
+    const store = tokenStore(localStorage, CLIENT_KEY);
+    const when = last.when || val('f-date');
+    const accepted = S.terms ? !!document.getElementById('f-terms')?.checked : true; // no terms published: nothing to accept
+    lock(submitBtn, true); submitStatus.textContent = I.submitting;
+    const res = await submitRequest(S.scheduleApi, {
+      serviceId: state.serviceId, hours: hourlyNow() ? state.hours : undefined, addons: last.addons,
+      start: state.slot ? state.slot.start : undefined, contact: { name, reach },
+      notes: [!state.slot && when ? `${I.date}: ${when}` : '', val('f-notes').trim()].filter(Boolean).join('\n'),
+      accepted_terms: accepted, clientToken: store.get() || undefined,
+    });
+    lock(submitBtn, false);
+    if (!res.ok) { submitStatus.textContent = res.fallback ? I.submit_fail : res.message; return; }
+    if (res.token) store.set(res.token);
+    submitStatus.replaceChildren(I.submitted + ' ');
+    const a = el('a', '', I.view_mine); a.href = '../my/'; submitStatus.append(a);
   });
   details.addEventListener('input', renderRequest);
   details.addEventListener('submit', (e) => e.preventDefault());
