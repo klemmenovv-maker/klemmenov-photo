@@ -182,6 +182,8 @@ export function formatRequest(r, crmFailed = false) {
     x.start ? `Preferred time: ${formatWhen(x.start, null)}` : 'Preferred time: not chosen',
     `Name: ${line(x.name)}`,
     `Contact: ${line(x.contact)}`,
+    ...(x.email ? [`Email: ${line(x.email)}`] : []),
+    ...(x.location ? [`Location: ${line(x.location)}${x.locationDetails ? `, ${line(x.locationDetails)}` : ''}`] : []),
     `Estimated total: ${num(x.totalAed)} AED`,
   ];
   for (const a of Array.isArray(x.addons) ? x.addons : []) out.push(`Add-on: ${line(a)}`);
@@ -191,4 +193,20 @@ export function formatRequest(r, crmFailed = false) {
   out.push(`Request: ${line(x.id)}`);
   if (crmFailed) out.push('CRM did not receive this request: please add it manually.');
   return out.join('\n');
+}
+
+// ---- owner area (Russian: the owner reads these) ----
+
+export function formatReminder(r, why) {
+  const x = r || {};
+  const out = [`<b>Напоминание</b>: ${block(why, MAX_NOTES)}`, `${line(x.name)}, ${line(x.contact)}`, `${line(x.serviceLabel)}${x.hours ? `, ${num(x.hours)} ч` : ''}`];
+  out.push(x.start ? `Время: ${formatWhen(x.start, null)}` : 'Время: не выбрано');
+  if (x.ownerNote) out.push(`Заметка: ${block(x.ownerNote, MAX_NOTES)}`);
+  return out.join('\n');
+}
+
+export function formatClientUpdate(r, cancelled) {
+  const x = r || {};
+  return [`<b>${cancelled ? 'Клиент отменил заявку' : 'Клиент обновил заявку'}</b>`, `${line(x.name)}, ${line(x.contact)}`,
+    x.start ? `Время: ${formatWhen(x.start, null)}` : 'Время: не выбрано', x.notes ? `Заметки клиента: ${block(x.notes, MAX_NOTES)}` : ''].filter(Boolean).join('\n');
 }

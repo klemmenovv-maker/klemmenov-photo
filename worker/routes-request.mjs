@@ -2,11 +2,15 @@
 // no hold. The server prices it, then delivers it to the CRM webhook and to the
 // owner's Telegram. If neither works the client gets 502 and falls back to
 // WhatsApp, so a request is never silently lost.
+import { createRequest } from './requests.mjs';
 import { fail, reply, readBody, isJsonContentType, hmacSha256Hex } from './http.mjs';
 
 const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/;
 const CONTACT_RE = /^(\+?[\d\s().-]{7,}|@[A-Za-z0-9_]{4,32}|[^\s@]+@[^\s@]+\.[^\s@]{2,})$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const LOCATIONS = ['studio', 'dubai', 'client'];
 const LINK_RE = /https?:\/\/|www\./gi;
+const TOKEN_RE = /^[A-Za-z0-9_-]{16,64}$/;
 const MAX_ADDON_QTY = 1000;
 const DEDUPE_TTL_S = 600;
 
@@ -20,11 +24,17 @@ function validate(body, env) {
   if (name === null || chars(name) < 1 || chars(name) > 80) return 'invalid_name';
   const reach = typeof contact.reach === 'string' ? contact.reach.trim() : null;
   if (reach === null || chars(reach) < 3 || chars(reach) > 120 || !CONTACT_RE.test(reach)) return 'invalid_contact';
+  const email = typeof contact.email === 'string' ? contact.email.trim() : null;
+  if (email === null || chars(email) > 120 || !EMAIL_RE.test(email)) return 'invalid_email';
+  const loc = body.location;
+  if (!isObj(loc) || !LOCATIONS.includes(loc.type)) return 'invalid_location';
+  const details = typeof (loc.details ?? '') === 'string' ? (loc.details ?? '').trim() : null;
+  if (details === null || chars(details) > 200 || (loc.type === 'client' && chars(details) < 3)) return 'invalid_location';
   const notes = body.notes ?? '';
   if (typeof notes !== 'string' || chars(notes) > 1000) return 'invalid_notes';
   if ((notes.match(LINK_RE) ?? []).length > 1) return 'invalid_notes'; // link spam
   if (env.REQUIRE_TERMS !== 'false' && body.accepted_terms !== true) return 'terms_not_accepted';
-  return { name, reach, notes: notes.trim() };
+  return { name, reach, email, location: loc.type, locationDetails: details, notes: notes.trim() };
 }
 
 // Optional preferred start: a real calendar time in the future. Not checked
@@ -71,7 +81,7 @@ export async function request(c) {
 
   // The same person pressing the button twice must not ping the owner twice.
   const key = await hmacSha256Hex('request-dedupe', new TextEncoder().encode(
-    [fields.name, fields.reach, q.serviceId, q.hours, when.start ?? ''].join('|').toLowerCase()));
+    [fields.name, fields.reach, fields.email, q.serviceId, q.hours, when.start ?? ''].join('|').toLowerCase()));
   const dedupeKey = `reqdup:${key}`;
   try {
     if (await env.BOOKINGS.get(dedupeKey)) return reply(200, { ok: true, duplicate: true });
@@ -86,6 +96,9 @@ export async function request(c) {
     status: 'new',
     name: fields.name,
     contact: fields.reach,
+    email: fields.email,
+    location: fields.location,
+    locationDetails: fields.locationDetails,
     serviceId: q.serviceId,
     serviceLabel,
     hours: q.hours,
@@ -114,6 +127,12 @@ export async function request(c) {
     return fail(502, 'delivery_failed'); // the client offers the WhatsApp fallback
   }
   try { await env.BOOKINGS.put(dedupeKey, '1', { expirationTtl: DEDUPE_TTL_S }); } catch { /* best effort */ }
+  // Keep the request for the account areas. A KV failure must not turn a delivered request into an error.
+  let token = null;
+  try {
+    const existing = typeof body.clientToken === 'string' && TOKEN_RE.test(body.clientToken) ? body.clientToken : null;
+    ({ token } = await createRequest(env.BOOKINGS, record, existing));
+  } catch { deps.log({ event: 'request_store_failed', requestId: id }); }
   deps.log({ event: 'request_received', requestId: id, crm, telegram });
-  return reply(200, { ok: true, id });
+  return reply(200, token ? { ok: true, id, token } : { ok: true, id });
 }

@@ -7,7 +7,7 @@ const json = (status, body) => async () => new Response(JSON.stringify(body), { 
 test('submitRequest: success', async () => {
   let seen;
   const r = await submitRequest('https://w.example/', { a: 1 }, async (u, i) => { seen = { u, i }; return new Response('{"ok":true,"id":"x"}'); });
-  assert.deepEqual(r, { ok: true, id: 'x' });
+  assert.deepEqual(r, { ok: true, id: 'x', token: null });
   assert.equal(seen.u, 'https://w.example/request');
   assert.equal(seen.i.method, 'POST');
 });

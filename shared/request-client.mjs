@@ -1,6 +1,8 @@
 // Browser side of POST /request. Never throws: the caller shows `message` and,
 // when `fallback` is "whatsapp", offers the WhatsApp link instead of losing the visitor.
 const MESSAGES = {
+  invalid_email: 'Please check your email address.',
+  invalid_location: 'Please choose a location and add the address if needed.',
   invalid_contact: 'Please check your phone, email or @username.',
   invalid_name: 'Please enter your name.',
   invalid_start: 'Please pick a time in the future.',
@@ -23,7 +25,7 @@ export async function submitRequest(api, payload, fetchImpl = fetch) {
   }
   let data = null;
   try { data = await res.json(); } catch { /* not json */ }
-  if (res.ok && data && data.ok === true) return { ok: true, id: data.id ?? null };
+  if (res.ok && data && data.ok === true) return { ok: true, id: data.id ?? null, token: data.token ?? null };
   const error = (data && data.error) || `http_${res.status}`;
   if (res.status >= 500 || res.status === 404) {
     return { ok: false, fallback: 'whatsapp', error, message: 'The booking service is unavailable. Send your request in WhatsApp instead.' };

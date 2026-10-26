@@ -39,6 +39,8 @@ export function buildWhatsAppText(result, contact, addons = {}, opts = {}) {
   if (clean(c.preferredDate)) out.push(`Preferred date: ${clean(c.preferredDate)}`);
   if (clean(c.name)) out.push(`Name: ${clean(c.name)}`);
   if (clean(c.reach)) out.push(`Contact: ${clean(c.reach)}`);
+  if (clean(c.email)) out.push(`Email: ${clean(c.email)}`);
+  if (clean(c.location)) out.push(`Location: ${clean(c.location)}`);
   if (clean(c.notes)) out.push(`Notes: ${clean(c.notes)}`);
   return out.join('\n');
 }

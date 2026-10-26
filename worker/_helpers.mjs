@@ -80,7 +80,8 @@ export function makeCtx() {
 
 export const validBody = (over = {}) => ({
   serviceId: 'personal', hours: 2, start: START,
-  contact: { name: 'Anna Client', reach: '+971500000001' },
+  contact: { name: 'Anna Client', reach: '+971500000001', email: 'anna@example.test' },
+  location: { type: 'studio' },
   notes: 'Golden hour please', accepted_terms: true, ...over,
 });
 
@@ -100,7 +101,7 @@ export function req(method, path, { body, headers = {}, ip = freshIp(), origin }
 }
 
 // Network functions that must be faked in every route test.
-const NETWORK = { ziina: 'all', google: 'all', telegram: ['notify'], crm: ['send'] };
+const NETWORK = { ziina: 'all', google: 'all', telegram: ['notify'], crm: ['send'], auth: ['exchangeCode'] };
 
 // Build deps with exactly the shape of defaultDeps: same top-level keys, same
 // function names per group; network functions replaced by fakes.
@@ -141,6 +142,7 @@ export function makeFakes({ now = NOW } = {}) {
     createEventImpl: null,
     notifyImpl: null,
     crmImpl: null,
+    authImpl: null,
     lastIntentId: null,
   };
   let n = 0;
@@ -188,6 +190,13 @@ export function makeFakes({ now = NOW } = {}) {
       async send(env, record) {
         calls.crm.push(record);
         if (f.crmImpl) return f.crmImpl(env, record);
+      },
+    },
+    auth: {
+      async exchangeCode(env, code) {
+        calls.exchange = [...(calls.exchange ?? []), code];
+        if (f.authImpl) return f.authImpl(env, code);
+        return { email: 'owner@example.test', verified: true };
       },
     },
     telegram: {

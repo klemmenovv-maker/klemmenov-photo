@@ -36,18 +36,20 @@ function corsHeaders(cors) {
   return h;
 }
 
-export function toResponse({ status, body }, cors) {
+export const redirect = (location) => ({ status: 302, body: null, headers: { Location: location, 'Referrer-Policy': 'no-referrer' } });
+
+export function toResponse({ status, body, headers }, cors) {
   return new Response(body === null ? null : JSON.stringify(body), {
     status,
-    headers: { ...BASE_HEADERS, ...corsHeaders(cors) },
+    headers: { ...BASE_HEADERS, ...corsHeaders(cors), ...headers },
   });
 }
 
 export function preflight(cors) {
   const h = { 'Cache-Control': 'no-store', ...corsHeaders(cors) };
   if (cors.allowed) {
-    h['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
-    h['Access-Control-Allow-Headers'] = 'Content-Type';
+    h['Access-Control-Allow-Methods'] = 'GET, POST, PATCH, DELETE, OPTIONS';
+    h['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
     h['Access-Control-Max-Age'] = '600';
   }
   return new Response(null, { status: 204, headers: h });

@@ -3,6 +3,8 @@
 import { quote } from './pricing.mjs';
 import { addDays, buildWhatsAppText, dubaiToday, formatAed, parseServiceParam, waUrl } from './book-ui.mjs';
 import { validateSchedule } from './schedule.mjs';
+import { submitRequest } from './request-client.mjs';
+import { tokenStore, CLIENT_KEY } from './account.mjs';
 
 const root = typeof document === 'undefined' ? null : document.querySelector('[data-wk]');
 
@@ -175,11 +177,12 @@ async function init() {
     last = r.ok ? { r, addons, when } : null;
     const text = last ? buildWhatsAppText(last.r, {
       greeting: I.greeting, name: val('f-name'), reach: val('f-reach'), notes: val('f-notes'),
-      preferredDate: when || val('f-date'),
+      preferredDate: when || val('f-date'), email: val('f-email'), location: locText(),
     }, addons, { quoteLabels: I.quote_labels }) : I.greeting;
     send.href = waUrl(S.wa, text); send.dataset.text = text;
   }
   const val = (id) => (document.getElementById(id) || {}).value || '';
+  const locText = () => { const sel = document.getElementById('f-loc'); return sel ? [sel.options[sel.selectedIndex].text, val('f-loc-d')].filter(Boolean).join(': ') : ''; };
 
   cont.addEventListener('click', () => {
     if (cont.getAttribute('aria-disabled') === 'true') return;
@@ -189,6 +192,39 @@ async function init() {
   sendTg.addEventListener('click', () => {
     const t = send.dataset.text || '';
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => { copied.textContent = I.copied; }, () => {});
+  });
+  const submitBtn = $('[data-submit]'), submitStatus = $('[data-submit-status]');
+  // Remember the visitor's details in this browser so the next request is one tap.
+  const profile = tokenStore(localStorage, 'klemmenov.profile');
+  try {
+    const p = JSON.parse(profile.get() || '{}');
+    for (const [id, k] of [['f-name', 'name'], ['f-reach', 'reach'], ['f-email', 'email']]) if (typeof p[k] === 'string') document.getElementById(id).value = p[k];
+  } catch { /* no saved details */ }
+  const locSel = document.getElementById('f-loc'), locField = $('[data-loc-field]');
+  const syncLoc = () => { locField.hidden = locSel.value === 'studio'; };
+  locSel.addEventListener('change', syncLoc); syncLoc();
+  if (submitBtn) submitBtn.addEventListener('click', async () => {
+    renderRequest();
+    const name = val('f-name').trim(), reach = val('f-reach').trim(), email = val('f-email').trim();
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+    if (!last || !name || reach.length < 7 || !emailOk || !document.getElementById('f-terms').checked) { submitStatus.textContent = I.fill; return; }
+    const loc = { type: locSel.value, details: val('f-loc-d').trim() };
+    if (loc.type === 'client' && loc.details.length < 3) { submitStatus.textContent = I.loc_need; return; }
+    const store = tokenStore(localStorage, CLIENT_KEY);
+    const when = last.when || val('f-date');
+    lock(submitBtn, true); submitStatus.textContent = I.submitting;
+    const res = await submitRequest(S.scheduleApi, {
+      serviceId: state.serviceId, hours: hourlyNow() ? state.hours : undefined, addons: last.addons,
+      start: state.slot ? state.slot.start : undefined, contact: { name, reach, email }, location: loc,
+      notes: [!state.slot && when ? `${I.date}: ${when}` : '', val('f-notes').trim()].filter(Boolean).join('\n'),
+      accepted_terms: true, clientToken: store.get() || undefined,
+    });
+    lock(submitBtn, false);
+    if (!res.ok) { submitStatus.textContent = res.fallback ? I.submit_fail : res.message; return; }
+    if (res.token) store.set(res.token);
+    profile.set(JSON.stringify({ name, reach, email }));
+    submitStatus.replaceChildren(I.submitted + ' ');
+    const a = el('a', '', I.view_mine); a.href = '../my/'; submitStatus.append(a);
   });
   details.addEventListener('input', renderRequest);
   details.addEventListener('submit', (e) => e.preventDefault());

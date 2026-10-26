@@ -239,7 +239,8 @@
         "artist": "artist",
         "person": "person",
         "photo": "photo",
-        "video": "video"
+        "video": "video",
+        "shoot": "shoot"
       },
       "unit_line": "{price} AED per {unit}",
       "qty_less": "Fewer",
@@ -255,8 +256,8 @@
       "continue": "Continue",
       "details": "Your details",
       "name": "Your name",
-      "reach": "WhatsApp or Telegram",
-      "reach_ph": "+971 or @username",
+      "reach": "Phone",
+      "reach_ph": "+971 …",
       "notes": "Notes (optional)",
       "notes_ph": "Location, occasion, anything I should know",
       "date": "Preferred date and time",
@@ -303,7 +304,25 @@
       "summary_hours": "{n} {unit}",
       "total": "Total",
       "total_quote": "quote",
-      "greeting": "Hello! I’m booking through the website."
+      "greeting": "Hello! I’m booking through the website.",
+      "submit": "Send request here",
+      "submitting": "Sending…",
+      "submitted": "Request sent. Track its status in My bookings.",
+      "submit_fail": "Could not send. Use WhatsApp or Telegram instead.",
+      "view_mine": "My bookings",
+      "terms_check": "I agree that my name, phone and email are stored and used to arrange this shoot.",
+      "fill": "Please enter your name, phone and a valid email, and accept the data use.",
+      "email": "Email",
+      "location": "Location",
+      "location_d": "Address or place",
+      "locations": {
+        "studio": "Studio",
+        "dubai": "Location in Dubai (street, beach, hotel)",
+        "client": "At your place"
+      },
+      "terms_link": "Terms",
+      "loc_need": "Please add the address.",
+      "rush_note": "Rush: priority booking and fast delivery."
     },
     "write": {
       "id": "message",
@@ -334,6 +353,26 @@
       "phone": "Phone / WhatsApp",
       "reviews_h": "Reviews",
       "reviews_lead": "What clients say about the photos, next to the photo."
+    },
+    "my": {
+      "title": "My bookings — Klemmenov",
+      "desc": "Your booking requests and their status.",
+      "h1": "My bookings",
+      "lead": "Your requests and their status. Keep this page: it opens only in the browser you sent the request from.",
+      "new": "New request",
+      "js": {
+        "loading": "Loading…",
+        "empty": "No requests in this browser yet. Send one on the booking page.",
+        "error": "Could not load. Try again in a minute.",
+        "nowhen": "Time not chosen yet",
+        "sent": "Sent",
+        "pick": "Preferred time",
+        "noteph": "Add a note",
+        "save": "Send update",
+        "cancel": "Cancel request",
+        "confirm": "Cancel this request?",
+        "bad": "Please pick a time in the future."
+      }
     }
   },
   "ru": {
@@ -556,6 +595,26 @@
       "phone": "Телефон / WhatsApp",
       "reviews_h": "Отзывы",
       "reviews_lead": "Что клиенты говорят о фото, рядом с самим фото."
+    },
+    "my": {
+      "title": "Мои записи — Klemmenov",
+      "desc": "Ваши заявки и их статус.",
+      "h1": "Мои записи",
+      "lead": "Ваши заявки и их статус. Страница открывается в том браузере, откуда отправлена заявка.",
+      "new": "Новая заявка",
+      "js": {
+        "loading": "Загрузка…",
+        "empty": "В этом браузере ещё нет заявок. Отправьте её на странице записи.",
+        "error": "Не удалось загрузить. Попробуйте через минуту.",
+        "nowhen": "Время ещё не выбрано",
+        "sent": "Отправлена",
+        "pick": "Желаемое время",
+        "noteph": "Добавить заметку",
+        "save": "Отправить уточнение",
+        "cancel": "Отменить заявку",
+        "confirm": "Отменить эту заявку?",
+        "bad": "Выберите время в будущем."
+      }
     }
   }
 }

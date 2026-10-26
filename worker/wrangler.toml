@@ -9,6 +9,7 @@
 #   CRM_WEBHOOK_SECRET     Optional shared secret sent in the webhook body
 #   GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET / GOOGLE_OAUTH_REFRESH_TOKEN
 #     Owner OAuth for the shared calendar (alternative to GOOGLE_SA_JSON).
+#   SESSION_SECRET         Random 32+ chars; signs the owner's admin session (see ADMIN_SETUP.md)
 #   GOOGLE_SA_JSON         Google service account JSON (calendar access)
 name = "klemmenov-booking"
 main = "index.mjs"
@@ -22,6 +23,7 @@ id = "0e40ee62916d484fb6717b71a601a4ba"
 SCHEDULE_ONLY = "true"
 ALLOWED_ORIGINS = "https://klemmenovv-maker.github.io"
 SITE_URL = "https://klemmenovv-maker.github.io/klemmenov-photo"
+OWNER_EMAIL = "klemmenovv@gmail.com"   # the only Google account allowed into /admin/
 ZIINA_TEST = "true"
 REQUIRE_TERMS = "true"
 GOOGLE_CALENDAR_ID = "37cc485a3e15153d6531413e920770e497404ee0e5338a9e5204efb2d843f7a7@group.calendar.google.com"
