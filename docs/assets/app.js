@@ -17,7 +17,7 @@
     var vh = window.innerHeight || 800;
     pending = pending.filter(function (t) {
       var r = t.getBoundingClientRect();
-      if (r.top < vh * 0.94 && r.bottom > -40) { t.classList.add('in'); return false; }
+      if (r.top < vh * 0.94) { t.classList.add('in'); return false; }
       return true;
     });
   }
