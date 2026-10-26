@@ -3,6 +3,8 @@ import { api, tokenStore, OWNER_KEY, OWNER_STATUS, formatWhen, toLocalInput, fro
 
 const root = typeof document === 'undefined' ? null : document.querySelector('[data-admin]');
 
+const KIND_RU = { photo: 'фотосъёмка', video: 'видеосъёмка', dayoff: 'выходной', studio: 'студия', hold: 'удержано' };
+
 async function init() {
   const base = root.dataset.api;
   const store = tokenStore(localStorage, OWNER_KEY);
@@ -115,13 +117,13 @@ async function init() {
       row.append(el('b', '', formatWhen(`${day}T12:00:00+04:00`, 'ru').split(',')[0]));
       const bar = el('div', 'acct-bar');
       for (const c of cells) {
-        const k = c.photographerClosed ? 'closed' : c.photographer ? 'free' : 'busy';
-        const s = el('i', k); s.title = `${c.time} ${k === 'free' ? 'свободно' : k === 'busy' ? 'занято' : 'не работаю'}`; bar.append(s);
+        const k = c.photographerClosed ? 'closed' : c.photographer ? 'free' : `k-${c.kind || 'photo'}`;
+        const s = el('i', k); s.title = `${c.time} ${k === 'free' ? 'свободно' : k === 'closed' ? 'не работаю' : KIND_RU[c.kind || 'photo']}`; bar.append(s);
       }
       row.append(bar); return row;
     });
     const scale = el('div', 'acct-day'); scale.append(el('b', ''), el('div', 'small note', '10:00 ─────────────────────── 21:00'));
-    const legend = el('p', 'small note', 'Зелёное: свободно · красное: занято в Google Календаре или удержано · серое: не рабочее время');
+    const legend = el('p', 'small note', 'Зелёное: свободно · цветные: занято в Google Календаре (фото, видео, выходной, студия) или удержано · серое: не рабочее время');
     box.replaceChildren(scale, ...rows, legend);
   }
 

@@ -46,7 +46,12 @@ export async function schedule(c) {
       const hours=Object.hasOwn(cfg.workHours.byWeekday||{},weekday)?cfg.workHours.byWeekday[weekday]:cfg.workHours;
       const clock=v=>Number(v.slice(0,2))*60+Number(v.slice(3));
       const photographerClosed=!hours||minute<clock(hours.from)||minute+30>clock(hours.to);
-      timeline[day].push({start:dubaiIso(s),end:dubaiIso(e),time:dubaiIso(s).slice(11,16),photographerClosed,photographer:!photographerClosed&&!overlaps([...busy.photographer,...held],s,e),studio:!overlaps([...busy.studio,...held],s,e)});
+      const hit=(ranges)=>ranges.find(r=>s<Date.parse(r.end)&&e>Date.parse(r.start));
+      const cell={start:dubaiIso(s),end:dubaiIso(e),time:dubaiIso(s).slice(11,16),photographerClosed,photographer:!photographerClosed&&!overlaps([...busy.photographer,...held],s,e),studio:!overlaps([...busy.studio,...held],s,e)};
+      // Only a category (photo, video, dayoff, studio, hold) is published, never an event title.
+      const ph=hit(busy.photographer), k=ph?(ph.kind??'photo'):hit(held)?'hold':hit(busy.studio)?.kind;
+      if(k&&!photographerClosed) cell.kind=k;
+      timeline[day].push(cell);
     }
   }
   return reply(200,{timeline,timezone:'Asia/Dubai',durationMin,days,updatedAt:now.toISOString(),confirmation:'request',bufferMin:cfg.bufferMin});

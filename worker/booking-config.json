@@ -11,7 +11,7 @@
     }
   },
   "bufferMin": 0,
-  "minNoticeHours": 48,
+  "minNoticeHours": 2,
   "horizonDays": 60,
   "stepMin": 30,
   "holdMinutes": 15,

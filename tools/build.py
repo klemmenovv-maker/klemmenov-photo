@@ -212,6 +212,7 @@ def book(lang):
                 f'<a href="{wa(x)}"><strong>WhatsApp</strong><span>+971 54 537 7769</span></a>'
                 f'<a href="{C["telegram"]}"><strong>Telegram</strong><span>@klemmenov</span></a>'
                 f'<a href="{C["instagram"]}"><strong>Instagram</strong><span>@klemmenov</span></a>')
+    legend = f'<li class="l-free">{B["legend"][0]}</li>' + ''.join(f'<li class="l-k-{k}">{v}</li>' for k, v in B['kinds'].items()) + f'<li class="l-closed">{B["legend"][2]}</li><li class="l-sel">{B["legend"][3]}</li>'
     t = head(x, B['title'], B['desc'])
     t += f'''<section class="ch-black book">
 <div class="page-head"><h1 class="rv">{B['h1']}</h1><p class="lead rv" style="--d:80ms">{B['lead']}</p></div>
@@ -230,7 +231,7 @@ def book(lang):
 <div class="wk-bar"><h2 class="wk-range" data-range aria-live="polite"></h2>
 <div class="wk-nav"><button type="button" data-prev aria-label="{B['week_prev']}">‹</button><button type="button" data-next aria-label="{B['week_next']}">›</button><button type="button" class="today" data-today>{B['today']}</button></div></div>
 <div class="wk-scroll"><div class="wk-grid" data-grid role="group" aria-label="{B['cal_label']}"></div></div>
-<ul class="legend" aria-hidden="true"><li class="l-free">{B['legend'][0]}</li><li class="l-busy">{B['legend'][1]}</li><li class="l-closed">{B['legend'][2]}</li><li class="l-sel">{B['legend'][3]}</li></ul>
+<ul class="legend" aria-hidden="true">{legend}</ul>
 <p class="small note" data-status role="status">{B['loading']}</p>
 <button type="button" class="linkbtn" data-retry hidden>{B['retry']}</button>
 </div>

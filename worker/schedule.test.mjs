@@ -8,14 +8,16 @@ const env={GOOGLE_OAUTH_CLIENT_ID:'client',GOOGLE_OAUTH_CLIENT_SECRET:'secret_va
 const stamp=t=>`2026-10-21T${t}:00+04:00`;
 const event=(summary,start,end,other={})=>({summary,start:{dateTime:stamp(start)},end:{dateTime:stamp(end)},...other});
 test('mixed calendar classifies studio, photographer, tentative and transparent entries',()=>{
- assert.deepEqual(classifyBusyEvent(event('Rent <> Project K','11:00','12:00',{status:'tentative'})),{studio:true,photographer:false});
- assert.deepEqual(classifyBusyEvent(event('Rent Yevhenii Klemenov <> Project K','11:00','12:00')),{studio:true,photographer:true});
- assert.deepEqual(classifyBusyEvent(event('Shoot','11:00','12:00')),{studio:false,photographer:true});
+ assert.deepEqual(classifyBusyEvent(event('Rent <> Project K','11:00','12:00',{status:'tentative'})),{studio:true,photographer:false,kind:'studio'});
+ assert.deepEqual(classifyBusyEvent(event('Rent Yevhenii Klemenov <> Project K','11:00','12:00')),{studio:true,photographer:true,kind:'studio'});
+ assert.deepEqual(classifyBusyEvent(event('Shoot','11:00','12:00')),{studio:false,photographer:true,kind:'photo'});
+ assert.equal(classifyBusyEvent(event('Video shoot Anna','11:00','12:00')).kind,'video');
+ assert.equal(classifyBusyEvent(event('Видеосъёмка','11:00','12:00')).kind,'video');
  assert.equal(classifyBusyEvent({summary:'Project K',transparency:'transparent'}),null);
  assert.equal(classifyBusyEvent({summary:'Shoot',status:'cancelled'}),null);
  assert.equal(classifyBusyEvent({summary:'Roma DAYOFF'}),null);
  assert.equal(classifyBusyEvent({summary:'Рома снимает'}),null);
- assert.deepEqual(classifyBusyEvent({summary:'Женя OFF'}),{studio:false,photographer:true});
+ assert.deepEqual(classifyBusyEvent({summary:'Женя OFF'}),{studio:false,photographer:true,kind:'dayoff'});
 });
 test('OAuth refresh, paginated events, exclusive all-day end and no private fields',async()=>{
  _resetTokenCacheForTests();let pages=0;
@@ -24,8 +26,8 @@ test('OAuth refresh, paginated events, exclusive all-day end and no private fiel
   assert.equal(init.method,'GET');assert.equal(init.headers.Authorization,'Bearer test_access');pages++;
   return Response.json(pages===1?{items:[event('Private client <> Project K','11:00','12:00')],nextPageToken:'page2'}:{items:[{summary:'Away',start:{date:'2026-10-21'},end:{date:'2026-10-22'}}]});
  });
- assert.equal(pages,2);assert.deepEqual(busy.studio,[{start:stamp('11:00'),end:stamp('12:00')}]);
- assert.deepEqual(busy.photographer,[{start:stamp('00:00'),end:'2026-10-22T00:00:00+04:00'}]);assert.doesNotMatch(JSON.stringify(busy),/Private|summary|access/);
+ assert.equal(pages,2);assert.deepEqual(busy.studio,[{start:stamp('11:00'),end:stamp('12:00'),kind:'studio'}]);
+ assert.deepEqual(busy.photographer,[{start:stamp('00:00'),end:'2026-10-22T00:00:00+04:00',kind:'photo'}]);assert.doesNotMatch(JSON.stringify(busy),/Private|summary|access/);
 });
 test('OAuth failures redact client secret and refresh token',async()=>{
  _resetTokenCacheForTests();await assert.rejects(getResourcesBusy(env,{from:stamp('00:00'),to:stamp('23:00')},async()=>new Response(JSON.stringify(env),{status:400})),e=>e instanceof GoogleError&&!e.body.includes(env.GOOGLE_OAUTH_CLIENT_SECRET)&&!e.body.includes(env.GOOGLE_OAUTH_REFRESH_TOKEN));
@@ -61,4 +63,12 @@ test('no buffer allows sessions adjacent to a studio booking; timeline still sho
  assert.equal(slots.find(s=>s.time==='12:00').available,true);
  assert.equal(d.timeline['2026-10-21'].find(s=>s.time==='11:30').studio,false);
  assert.equal(d.timeline['2026-10-21'].find(s=>s.time==='12:00').studio,true);
+});
+
+test('timeline names the kind of every busy cell, never a title',async()=>{
+ const c=ctx();c.deps.google.getResourcesBusy=async()=>({photographer:[{start:stamp('15:00'),end:stamp('16:00'),kind:'video'}],studio:[{start:stamp('11:00'),end:stamp('12:00'),kind:'studio'}]});
+ c.deps.bookings.listActiveEntries=async()=>[{start:stamp('17:00'),end:stamp('18:00')}];
+ const cells=(await schedule(c)).body.timeline['2026-10-21'];const at=(t)=>cells.find(x=>x.time===t);
+ assert.equal(at('15:00').kind,'video');assert.equal(at('15:30').kind,'video');assert.equal(at('17:00').kind,'hold');
+ assert.equal(at('11:00').kind,'studio');assert.equal(at('13:00').kind,undefined);
 });
