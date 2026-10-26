@@ -391,3 +391,8 @@ footer .lead { margin: 0 auto; }
   .trow { gap: 10px; } .tsel select { min-width: 88px; }
   .wk-bottom .btn, .wk-details .actions .btn { width: 100%; justify-content: center; text-align: center; }
 }
+
+.wk-grid .wk-c { user-select: none; -webkit-user-select: none; }
+.wk-c.free { cursor: grab; }
+.wk-grid.dragging, .wk-grid.dragging .wk-c.free { cursor: grabbing; }
+.drag-hint { max-width: 46ch; }

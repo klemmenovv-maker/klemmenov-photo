@@ -332,9 +332,10 @@
       },
       "from": "From",
       "to": "To",
-      "time_hint": "Pick a free time in the calendar to set the start and end.",
       "h_short": "h",
-      "my": "My bookings"
+      "my": "My bookings",
+      "drag_hint": "Drag over the free hours of one day to set from and to. On a phone: tap the start, then tap the end.",
+      "drag_more": "Drag again or tap another hour to change the time."
     },
     "write": {
       "id": "message",
