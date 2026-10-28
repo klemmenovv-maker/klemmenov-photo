@@ -270,9 +270,8 @@ function eventInstant(value, end = false) {
   if (/^\d{4}-\d{2}-\d{2}$/.test(value?.date || '')) return `${value.date}T00:00:00+04:00`;
   throw new GoogleError('Calendar event is missing a valid start/end', 0);
 }
-export async function getResourcesBusy(env, { from, to }, fetchImpl = fetch) {
-  const { sa, calendarId } = parseConfig(env);
-  const ranges = { photographer: [], studio: [] };
+// Every page of a calendar's events in [from, to); `onEvent` gets each raw event.
+async function eachEvent(env, sa, calendarId, { from, to }, fetchImpl, onEvent) {
   let pageToken;
   const seen = new Set();
   do {
@@ -280,18 +279,41 @@ export async function getResourcesBusy(env, { from, to }, fetchImpl = fetch) {
     if (pageToken) params.set('pageToken', pageToken);
     const { data } = await api(env, sa, `${API}/calendars/${encodeURIComponent(calendarId)}/events?${params}`, undefined, fetchImpl);
     if (!Array.isArray(data.items)) throw new GoogleError('Calendar response missing events', 0);
-    for (const event of data.items) {
-      const resource = classifyBusyEvent(event);
-      if (!resource) continue;
-      const range = { start: eventInstant(event.start), end: eventInstant(event.end), kind: resource.kind };
-      if (Date.parse(range.end) <= Date.parse(range.start)) throw new GoogleError('Invalid event interval', 0);
-      if (resource.studio) ranges.studio.push(range);
-      if (resource.photographer) ranges.photographer.push(range);
-    }
+    for (const event of data.items) onEvent(event);
     pageToken = data.nextPageToken;
     if (pageToken && seen.has(pageToken)) throw new GoogleError('Calendar pagination repeated', 0);
     if (pageToken) seen.add(pageToken);
   } while (pageToken);
+}
+const rangeOf = (event, kind) => {
+  const range = { start: eventInstant(event.start), end: eventInstant(event.end), kind };
+  if (Date.parse(range.end) <= Date.parse(range.start)) throw new GoogleError('Invalid event interval', 0);
+  return range;
+};
+
+export async function getResourcesBusy(env, { from, to }, fetchImpl = fetch) {
+  const { sa, calendarId } = parseConfig(env);
+  const ranges = { photographer: [], studio: [] };
+  await eachEvent(env, sa, calendarId, { from, to }, fetchImpl, (event) => {
+    const resource = classifyBusyEvent(event);
+    if (!resource) return;
+    const range = rangeOf(event, resource.kind);
+    if (resource.studio) ranges.studio.push(range);
+    if (resource.photographer) ranges.photographer.push(range);
+  });
+  // The studio's own calendar (Project K): everything in it blocks the studio, whatever the title.
+  const studioId = String(env.GOOGLE_STUDIO_CALENDAR_ID ?? '').trim();
+  if (studioId && studioId !== calendarId) {
+    try {
+      await eachEvent(env, sa, studioId, { from, to }, fetchImpl, (event) => {
+        if (event.status === 'cancelled' || event.transparency === 'transparent') return;
+        ranges.studio.push(rangeOf(event, 'studio'));
+      });
+    } catch (e) {
+      // Not shared yet or Google hiccup: the photographer's calendar still decides; the owner confirms the studio.
+      console.log(JSON.stringify({ event: 'studio_calendar_unavailable', status: e?.status ?? 0, reason: String(e?.message ?? '').slice(0, 120) }));
+    }
+  }
   // Include the owner's primary calendar too, if explicitly configured.
   if (env.GOOGLE_PERSONAL_CALENDAR_ID && env.GOOGLE_PERSONAL_CALENDAR_ID !== calendarId) {
     ranges.photographer.push(...await getBusy({...env, GOOGLE_CALENDAR_ID: env.GOOGLE_PERSONAL_CALENDAR_ID}, {from,to}, fetchImpl));

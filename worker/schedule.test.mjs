@@ -72,3 +72,22 @@ test('timeline names the kind of every busy cell, never a title',async()=>{
  assert.equal(at('15:00').kind,'video');assert.equal(at('15:30').kind,'video');assert.equal(at('17:00').kind,'hold');
  assert.equal(at('11:00').kind,'studio');assert.equal(at('13:00').kind,undefined);
 });
+
+test('studio calendar blocks the studio; an unreadable one is skipped',async()=>{
+ _resetTokenCacheForTests();
+ const e={...env,GOOGLE_STUDIO_CALENDAR_ID:'studio@example.test'};
+ const calls=[];
+ const fetcher=async(url,init)=>{
+  if(url.includes('oauth2'))return Response.json({access_token:'t',expires_in:3600});
+  calls.push(url);
+  if(url.includes(encodeURIComponent('studio@example.test')))return Response.json({items:[{summary:'Anyone',start:{dateTime:stamp('13:00')},end:{dateTime:stamp('14:00')}},{summary:'Free',transparency:'transparent',start:{dateTime:stamp('15:00')},end:{dateTime:stamp('16:00')}}]});
+  return Response.json({items:[]});
+ };
+ const busy=await getResourcesBusy(e,{from:stamp('00:00'),to:'2026-10-22T00:00:00+04:00'},fetcher);
+ assert.deepEqual(busy.studio,[{start:stamp('13:00'),end:stamp('14:00'),kind:'studio'}]);
+ assert.deepEqual(busy.photographer,[]);
+ _resetTokenCacheForTests();
+ const failing=async(url)=>url.includes('oauth2')?Response.json({access_token:'t',expires_in:3600}):url.includes(encodeURIComponent('studio@example.test'))?new Response('{}',{status:404}):Response.json({items:[]});
+ const ok=await getResourcesBusy(e,{from:stamp('00:00'),to:'2026-10-22T00:00:00+04:00'},failing);
+ assert.deepEqual(ok,{photographer:[],studio:[]});
+});
