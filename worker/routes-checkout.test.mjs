@@ -15,12 +15,12 @@ async function checkout(f, env, body, opts = {}) {
 
 // ---- 1. checkout_prices_on_server ------------------------------------------
 
-test('checkout_prices_on_server: client totals are ignored; below minimum is rejected', async () => {
+test('checkout_prices_on_server: client totals are ignored; an invalid length is rejected', async () => {
   const f = makeFakes();
   const env = makeEnv();
-  const r = await checkout(f, env, validBody({ serviceId: 'commercial', hours: 1, total: 1, deposit: 1 }));
+  const r = await checkout(f, env, validBody({ serviceId: 'commercial', hours: 0, total: 1, deposit: 1 }));
   assert.equal(r.status, 400);
-  assert.deepEqual(r.json, { error: 'below_minimum' });
+  assert.deepEqual(r.json, { error: 'invalid_hours' });
   assert.equal(f.calls.createIntent.length, 0);
 });
 

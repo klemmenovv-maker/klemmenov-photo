@@ -25,7 +25,7 @@ export async function schedule(c) {
       deps.google.getResourcesBusy(env,{from:dubaiIso(start-cfg.bufferMin*60000),to:dubaiIso(end+cfg.bufferMin*60000)},deps.fetch),
       deps.bookings.listActiveEntries(env.BOOKINGS,from,to,now),
     ]);
-  } catch { return fail(503,'calendar_unavailable'); }
+  } catch (e) { deps.log({event:'schedule_failed',code:e?.name??'Error',status:e?.status??0,reason:String(e?.message??'').slice(0,160)}); return fail(503,'calendar_unavailable'); }
   const options = {durationMin, workHours:cfg.workHours,bufferMin:cfg.bufferMin,minNoticeHours:cfg.minNoticeHours,horizonDays:cfg.horizonDays,stepMin:cfg.stepMin,now:now.toISOString()};
   const all = deps.computeSlots({...options,busy:[],held:[]});
   const photographer = new Set(deps.computeSlots({...options,busy:busy.photographer,held}));

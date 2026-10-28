@@ -11,13 +11,13 @@
       "label": "Commercial photoshoot",
       "type": "hourly",
       "rate": 1500,
-      "min": 2
+      "min": 1
     },
     "event": {
       "label": "Event photography",
       "type": "hourly",
       "rate": 1500,
-      "min": 2
+      "min": 1
     },
     "beauty": {
       "label": "Studio Beauty Package",

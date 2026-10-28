@@ -134,7 +134,7 @@ test('request: validation errors', async () => {
     [{ start: '2020-01-01T10:00:00+04:00' }, 400, 'invalid_start'],
     [{ start: '2026-02-31T10:00:00+04:00' }, 400, 'invalid_start'],
     [{ start: 'tomorrow' }, 400, 'invalid_start'],
-    [{ hours: 1, serviceId: 'commercial' }, 400, 'below_minimum'],
+    [{ hours: 0, serviceId: 'commercial' }, 400, 'invalid_hours'],
   ];
   for (const [over, status, error] of cases) {
     const f = makeFakes();
