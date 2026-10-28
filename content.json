@@ -111,7 +111,7 @@
       "name": "Commercial Shoot",
       "title": "Commercial photoshoot",
       "rate": 1500,
-      "min": 2,
+      "min": 1,
       "included": [
         "Professional color grading",
         "Up to 5 outfits per hour (recommended)",
@@ -128,7 +128,7 @@
       "name": "Event Shoot",
       "title": "Event photography",
       "rate": 1500,
-      "min": 2,
+      "min": 1,
       "included": [
         "Professional color grading",
         "Commercial usage rights"
@@ -321,13 +321,13 @@
       "label": "Commercial photoshoot",
       "type": "hourly",
       "rate": 1500,
-      "min": 2
+      "min": 1
     },
     "event": {
       "label": "Event photography",
       "type": "hourly",
       "rate": 1500,
-      "min": 2
+      "min": 1
     },
     "beauty": {
       "label": "Studio Beauty Package",

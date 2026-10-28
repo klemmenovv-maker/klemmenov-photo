@@ -254,7 +254,7 @@ test('canPay and payMissing', () => {
   assert.deepEqual(payMissing(full), []);
   const cases = [
     [{ quote: null }, ['service']],
-    [{ quote: quote(config, { serviceId: 'event', hours: 1 }) }, ['service']],
+    [{ quote: quote(config, { serviceId: 'event', hours: 0 }) }, ['service']],
     [{ start: '' }, ['date']],
     [{ start: null }, ['date']],
     [{ name: '   ' }, ['name']],

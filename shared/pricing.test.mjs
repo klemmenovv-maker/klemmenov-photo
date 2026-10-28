@@ -52,9 +52,9 @@ test('invalid hours', () => {
   }
 });
 
-test('below minimum', () => {
-  assert.deepEqual(q('commercial', 1), { ok: false, error: 'below_minimum' });
-  assert.deepEqual(q('event', 1), { ok: false, error: 'below_minimum' });
+test('every hourly shoot starts at one hour', () => {
+  for (const id of ['personal', 'commercial', 'event']) assert.equal(q(id, 1).ok, true, id);
+  assert.deepEqual(q('commercial', 0), { ok: false, error: 'invalid_hours' });
 });
 
 test('unknown service and add-on', () => {

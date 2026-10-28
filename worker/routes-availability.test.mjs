@@ -83,7 +83,7 @@ test('availability: 400 on bad service, hours or range', async () => {
     ['service=personal&hours=2.5', 'invalid_hours'],
     ['service=personal&hours=-1', 'invalid_hours'],
     ['service=personal&hours=13', 'invalid_hours'],
-    ['service=commercial&hours=1', 'below_minimum'],
+    ['service=commercial&hours=0', 'invalid_hours'],
     ['service=personal&hours=2&from=21-10-2026', 'bad_range'],
     ['service=personal&hours=2&from=2026-02-31', 'bad_range'],
     ['service=personal&hours=2&from=2026-10-25&to=2026-10-24', 'bad_range'],
